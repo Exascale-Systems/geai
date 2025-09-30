@@ -1,0 +1,1 @@
+Generate density + topography dataset  → Get true gravity → Add noise + define measurement locations → “observed gravity” (d_obs) + topography dataset (xyz_topo) → SIMPEG 
