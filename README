@@ -1,1 +1,1 @@
-Generate density contrast, topography, survey locations → Get true gravity → Add noise to simulate realistic measurements → Solve for density contrast using SIMPEG 
+Generate mesh, map density contrast, define topography and survey locations → Get true gravity → Add noise to simulate realistic gravity measurements → Solve for density contrast using SIMPEG (L2 or IRLS inverse solvers)
