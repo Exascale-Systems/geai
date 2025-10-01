@@ -1,1 +1,1 @@
-Generate density + topography dataset  → Get true gravity → Add noise + define measurement locations → “observed gravity” (d_obs) + topography dataset (xyz_topo) → SIMPEG 
+Generate density contrast, topography, survey locations → Get true gravity → Add noise to simulate realistic measurements → Solve for density contrast using SIMPEG 
