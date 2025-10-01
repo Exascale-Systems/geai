@@ -5,7 +5,7 @@ from simpeg import maps
 from simpeg.utils import plot2Ddata
 
 
-def plot_density_model(mesh, ind_active, true_model):
+def plot_density_contrast(mesh, ind_active, true_model):
     """
     Plot a density contrast model slice with colorbar.
 
@@ -48,7 +48,7 @@ def plot_density_model(mesh, ind_active, true_model):
     plt.show()
 
 
-def plot_gravity_anomaly(receiver_locations, dpred, title="Gravity Anomaly (Z-component)",
+def plot_gravity_measurements(receiver_locations, dpred, title="Gravity Anomaly (Z-component)",
                          units="$mgal$", show_points=True, cmap="bwr", ncontour=30):
     """
     Plot a 2D gravity anomaly map with survey stations.
