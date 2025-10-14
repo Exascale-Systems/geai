@@ -4,6 +4,27 @@ import matplotlib as mpl
 from simpeg import maps
 from simpeg.utils import plot2Ddata
 
+def plot_topography(topo_xyz):
+    """
+    Create a 3D scatter plot of topography points.
+
+    Parameters
+    ----------
+    topo_xyz : ndarray, shape (N,3)
+        Point cloud of topography.
+    """ 
+
+    fig = plt.figure(figsize=(8,6))
+    ax = fig.add_subplot(111, projection='3d')
+
+    ax.scatter(topo_xyz[:,0], topo_xyz[:,1], topo_xyz[:,2], 
+           c=topo_xyz[:,2], cmap='terrain', s=5)
+
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+    plt.show()
+    
 
 def plot_density_contrast(mesh, ind_active, true_model):
     """
@@ -28,7 +49,7 @@ def plot_density_contrast(mesh, ind_active, true_model):
         plotting_map * true_model,
         normal="Y",
         ax=ax1,
-        ind=int(mesh.shape_cells[1] / 2),
+        ind=int(mesh.shape_cells[1] / 2), 
         grid=True,
         clim=(np.min(true_model), np.max(true_model)),
         pcolor_opts={"cmap": "viridis"},
