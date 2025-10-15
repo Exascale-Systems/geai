@@ -16,8 +16,8 @@ from simpeg import (
     inversion,
     utils,
 )
-
-from plots import plot_topography, plot_density_contrast_2D, plot_density_contrast_3D, plot_density_contrast_3D_voxels, plot_gravity_measurements
+import h5py
+from src.plotter import plot_topography, plot_density_contrast_2D, plot_density_contrast_3D, plot_density_contrast_3D_voxels, plot_gravity_measurements
 
 
 def synthetic_topography(
@@ -269,6 +269,11 @@ def gravity_survey(
     source_field = gravity.sources.SourceField(receiver_list=receiver_list)
     survey = gravity.survey.Survey(source_field)
     return receiver_locations, receiver_list, source_field, survey
+
+
+def add_noise():
+    """
+    """
 
 
 if __name__ == "__main__":

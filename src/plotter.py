@@ -4,6 +4,7 @@ import matplotlib as mpl
 from simpeg import maps
 from simpeg.utils import plot2Ddata
 
+
 def plot_topography(topo_xyz):
     """
     Create a 3D scatter plot of topography points.
@@ -91,41 +92,54 @@ def plot_density_contrast_3D(mesh, ind_active, blocks_mask):
 
 def plot_density_contrast_3D_voxels(mesh, ind_active, blocks_mask):
     """
-    Create a 3D voxel plot of the density contrast model.
-    Parameters
-    ----------
-    mesh : discretize.TensorMesh
-        The mesh object used in the simulation.
-    ind_active : numpy.ndarray (bool)
-        Boolean mask for active cells.
-    blocks_mask : numpy.ndarray (bool)
-        Boolean mask for cells occupied by density blocks.
+    Plot 3D voxel grid showing:
+      - semi-transparent active (earth) volume
+      - solid blocks overlay for density anomalies
     """
-        # Steps to create a voxel plot from a TensorMesh and active cell mask:
-    # 1) Rebuild a full-cell boolean mask from your active subset
-    # ind_active: boolean array over ALL cells (len = mesh.nC) marking earth vs air
-    # blocks_mask: boolean array over ACTIVE cells only (len = ind_active.sum())
-    full_mask = np.zeros(mesh.nC, dtype=bool)
-    full_mask[ind_active] = blocks_mask
+    # --- 1. Full-size masks ---
+    full_active = np.zeros(mesh.nC, dtype=bool)
+    full_active[ind_active] = True
 
-    # 2) Reshape to (nx, ny, nz) **in Fortran order** (discretize uses 'F')
-    filled = full_mask.reshape(mesh.shape_cells, order="F")  # shape (nx, ny, nz)
+    full_blocks = np.zeros(mesh.nC, dtype=bool)
+    full_blocks[ind_active] = blocks_mask
 
-    # 3) Build the voxel corner grids so voxel sizes match your TensorMesh cell widths
+    # --- 2. Reshape to 3D (Fortran order) ---
+    active_vol = full_active.reshape(mesh.shape_cells, order="F")
+    block_vol  = full_blocks.reshape(mesh.shape_cells, order="F")
+
+    # --- 3. Compute voxel edge grids ---
     x_edges = mesh.x0[0] + np.r_[0.0, np.cumsum(mesh.h[0])]
     y_edges = mesh.x0[1] + np.r_[0.0, np.cumsum(mesh.h[1])]
     z_edges = mesh.x0[2] + np.r_[0.0, np.cumsum(mesh.h[2])]
-    X, Y, Z = np.meshgrid(x_edges, y_edges, z_edges, indexing="ij")  # (nx+1,ny+1,nz+1)
+    X, Y, Z = np.meshgrid(x_edges, y_edges, z_edges, indexing="ij")
 
-    # 4) Plot crisp voxels
-    fig = plt.figure(figsize=(7,5))
+    # --- 4. Plot ---
+    fig = plt.figure(figsize=(8,6))
     ax = fig.add_subplot(111, projection="3d")
 
-    ax.voxels(X, Y, Z, filled, facecolors="tab:blue", edgecolor="k", linewidth=0.2)
+    # Base active domain (semi-transparent gray)
+    ax.voxels(
+        X, Y, Z, active_vol,
+        facecolors="lightgray",
+        edgecolor="none",
+        alpha=0.30
+    )
 
-    # Make aspect ratio reflect real extents
+    # Overlay blocks (solid blue)
+    ax.voxels(
+        X, Y, Z, block_vol,
+        facecolors="tab:blue",
+        edgecolor="k",
+        linewidth=0.2,
+        alpha=0.9
+    )
+
+    # --- 5. Formatting ---
     ax.set_box_aspect((np.sum(mesh.h[0]), np.sum(mesh.h[1]), np.sum(mesh.h[2])))
-    ax.set_xlabel("X"); ax.set_ylabel("Y"); ax.set_zlabel("Z")
+    ax.set_xlabel("X (m)")
+    ax.set_ylabel("Y (m)")
+    ax.set_zlabel("Z (m)")
+    ax.set_title("3D Density Blocks Overlay on Active Volume")
     plt.tight_layout()
     plt.show()
 
