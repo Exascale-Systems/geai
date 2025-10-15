@@ -4,7 +4,7 @@ from tqdm import tqdm  # progress bar
 
 
 def generate_batch(
-    out_path="../data/master.h5",
+    out_path="data/master.h5",
     batch_size=10,
     x_dom=2000, y_dom=2000, z_dom=500.0, # domain size (m)
     n_xy=40, n_z=20, # mesh resolution
