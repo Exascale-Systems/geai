@@ -55,6 +55,7 @@ class MasterWriter:
     def add(self, seed, gz, receiver_locations, true_model, ind_active):
         """Add one sample using seed as group name."""
         sg = self.samples.create_group(str(seed))
+        print(type(seed))
         sg.attrs["seed"] = int(seed)
         sg.create_dataset("gz", data=np.asarray(gz, np.float32), compression="gzip")
         sg.create_dataset("receiver_locations", data=np.asarray(receiver_locations, np.float32), compression="gzip")

@@ -7,19 +7,20 @@ from simpeg.potential_fields import gravity
 
 
 def create_topo(
-    x_min=-1000, x_max=1000,
-    y_min=-1000, y_max=1000,
+    x_dom=2000, y_dom=2000,
     dx=10, dy=10,
     base_level=0.0,
-    fbm_amp=80.0,         # amplitude of topography (set to 0 for flat)
-    seed=4,
-    noise_sigma=0.5, 
+    fbm_amp=0.0,         # amplitude of topography (set to 0 for flat)
+    seed=0,
+    noise_sigma=0.0, 
     cycles1=(1.0, 1.0),   # number of long-wavelength cycles in x/y
     cycles2=(3.0, 2.0),   # number of finer cycles in x/y
     phase=0.0,            # phase offset
 ):
     """Return (N,3) synthetic topography points."""
     rng = np.random.default_rng(seed)
+    x_min, x_max=-x_dom/2, x_dom/2
+    y_min, y_max=-y_dom/2, y_dom/2
     xs = np.arange(x_min, x_max + 1e-9, dx)
     ys = np.arange(y_min, y_max + 1e-9, dy)
     Lx, Ly = float(x_max - x_min), float(y_max - y_min)
@@ -42,7 +43,7 @@ def create_topo(
     return np.c_[X.ravel(), Y.ravel(), Z.ravel()]
 
 
-def create_mesh(topo_xyz, n_xy=40, n_z=20, z_down=500.0):
+def create_mesh(topo_xyz, n_xy=40, n_z=20, z_dom=500.0):
     """
     Square XY extent covering topo; 'CCN' => centered x/y, z goes negative.
     """
@@ -51,7 +52,7 @@ def create_mesh(topo_xyz, n_xy=40, n_z=20, z_down=500.0):
     L = max(x_max - x_min, y_max - y_min)
     hx = [(L / n_xy, n_xy)]
     hy = [(L / n_xy, n_xy)]
-    hz = [(z_down / n_z, n_z)]
+    hz = [(z_dom / n_z, n_z)]
     return TensorMesh([hx, hy, hz], "CCN")
 
 
@@ -70,9 +71,9 @@ def add_random_blocks(
     mesh,
     ind_active,
     base_model=None,
-    n_blocks=4,
+    n_blocks=1,
     size_frac_range=(0.05, 0.30),
-    density_range=(0.0, 2.0),
+    density_range=(0.0, 2.0), 
     seed=90,
     max_tries=200,
     enforce_nonoverlap=True,
@@ -126,15 +127,13 @@ def add_random_blocks(
 
 def gravity_survey(
     topo_xyz,
-    dh=5.0,
     n_per_axis=20,
     components=("gz",),
 ):
     """
-    Build receiver grid at height `dh` above topo; returns (receiver_locations, survey).
+    Build receiver grid at topography surface; returns (receiver_locations, survey).
     Components e.g. ('gz',), ('gx','gy','gz'), or ('gxx','gxy',...).
     """
-    
     x_min, x_max = float(topo_xyz[:, 0].min()), float(topo_xyz[:, 0].max())
     y_min, y_max = float(topo_xyz[:, 1].min()), float(topo_xyz[:, 1].max())
     xs = np.linspace(x_min, x_max, n_per_axis)
@@ -155,7 +154,7 @@ def gravity_survey(
         )
         raise ValueError(msg)
 
-    receiver_locations = np.c_[rx_xy, z + dh]
+    receiver_locations = np.c_[rx_xy, z]
     rx = gravity.receivers.Point(receiver_locations, components=list(components))
     src = gravity.sources.SourceField(receiver_list=[rx])
     survey = gravity.survey.Survey(src)
@@ -172,10 +171,10 @@ def add_noise(data, noise_level=0.05, seed=100):
     return data + rng.normal(0.0, sigma, size=data.shape)
 
 
-def main(seed=2):
-    topo_xyz = create_topo(seed=seed)
+def main():
+    topo_xyz = create_topo()
 
-    mesh = create_mesh(topo_xyz, n_xy=40, n_z=20, z_down=500.0)
+    mesh = create_mesh(topo_xyz, n_xy=40, n_z=20, z_dom=500.0)
     
     ind_active, nC, model_map, true_model = init_model(mesh, topo_xyz)
 
@@ -186,11 +185,10 @@ def main(seed=2):
         n_blocks=4,
         size_frac_range=(0.08, 0.30),
         density_range=(0.0, 2.0),
-        seed=seed,
         enforce_nonoverlap=True,
     )
 
-    receiver_locations, survey = gravity_survey(topo_xyz, dh=5.0, n_per_axis=20, components=("gz",))
+    receiver_locations, survey = gravity_survey(topo_xyz, n_per_axis=20, components=("gz",))
 
     sim = gravity.simulation.Simulation3DIntegral(
         survey=survey,
