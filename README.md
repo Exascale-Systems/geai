@@ -3,6 +3,5 @@ Generate mesh, map density contrast, define topography and survey locations → 
 
 ## Option 2
 Neural net to solve for density contrast <-- Requires training with synethetic data:
-
 - density contrast (y)
 - gravity (x)
