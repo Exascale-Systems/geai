@@ -201,7 +201,7 @@ def main():
     data = add_noise(sim.dpred(true_model))
 
     try:
-        from src.plotter import (
+        from src.viz.samples import (
             plot_topography,
             plot_density_contrast_3D_voxels,
             plot_gravity_measurements,

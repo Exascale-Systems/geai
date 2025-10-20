@@ -1,5 +1,5 @@
-from generator import *
-from hdf5_io import MasterWriter
+from src.gen.gen import *
+from src.gen.io.hdf5_o import MasterWriter
 from tqdm import tqdm  # progress bar
 
 
