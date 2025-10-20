@@ -1,1 +1,8 @@
+## Option 1
 Generate mesh, map density contrast, define topography and survey locations → Get true gravity → Add noise to simulate realistic gravity measurements → Solve for density contrast using SIMPEG (L2 or IRLS inverse solvers)
+
+## Option 2
+Neural net to solve for density contrast <-- Requires training with synethetic data:
+
+- density contrast (y)
+- gravity (x)
