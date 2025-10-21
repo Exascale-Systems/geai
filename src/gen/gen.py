@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.interpolate import LinearNDInterpolator
+from scipy.stats import norm
 from discretize import TensorMesh
 from discretize.utils import active_from_xyz
 from simpeg import maps
@@ -7,53 +8,46 @@ from simpeg.potential_fields import gravity
 
 
 def create_topo(
-    x_dom=2000, y_dom=2000,
-    dx=10, dy=10,
-    base_level=0.0,
-    fbm_amp=0.0,         # amplitude of topography (set to 0 for flat)
-    seed=0,
-    noise_sigma=0.0, 
-    cycles1=(1.0, 1.0),   # number of long-wavelength cycles in x/y
-    cycles2=(3.0, 2.0),   # number of finer cycles in x/y
-    phase=0.0,            # phase offset
-):
+        x_dom=1e3, y_dom=1e3,   # domain size in x/y (m)
+        dx=50, dy=50,           # grid spacing in x/y (m)   
+        fbm_amp=0.0,            # amplitude of topography (set to 0 for flat)
+        seed=0,                 # random seed
+        noise_sigma=0.0,        # stddev of Gaussian noise added to topography (m)
+        cycles1=(1.0, 1.0),     # number of long-wavelength cycles in x/y
+        cycles2=(3.0, 2.0),     # number of finer cycles in x/y
+        phase=0.0,              # phase offset
+    ):
     """Return (N,3) synthetic topography points."""
     rng = np.random.default_rng(seed)
-    x_min, x_max=-x_dom/2, x_dom/2
-    y_min, y_max=-y_dom/2, y_dom/2
-    xs = np.arange(x_min, x_max + 1e-9, dx)
-    ys = np.arange(y_min, y_max + 1e-9, dy)
-    Lx, Ly = float(x_max - x_min), float(y_max - y_min)
+    xs = np.linspace(0, x_dom, int(round(x_dom/dx)))
+    ys = np.linspace(0, y_dom, int(round(y_dom/dy)))
     X, Y = np.meshgrid(xs, ys, indexing="xy")
-
-    U = (X - x_min) / Lx
-    V = (Y - y_min) / Ly
-
+    U = (X - x_dom/2) / x_dom
+    V = (Y - y_dom/2) / y_dom
     w1x, w1y = 2*np.pi*cycles1[0], 2*np.pi*cycles1[1]
     w2x, w2y = 2*np.pi*cycles2[0], 2*np.pi*cycles2[1]
-
-    Z = base_level + fbm_amp * (
+    Z = fbm_amp * (
         np.sin(w1x*U + phase) * np.cos(w1y*V + 0.5*phase)
         + 0.5*np.sin(w2x*U) * np.cos(w2y*V)
     )
-
     if noise_sigma:
         Z += rng.normal(0.0, noise_sigma, size=Z.shape)
-
     return np.c_[X.ravel(), Y.ravel(), Z.ravel()]
 
 
-def create_mesh(topo_xyz, n_xy=40, n_z=20, z_dom=500.0):
+def create_mesh(
+        topo_xyz, 
+        n_xy=32,    # number of cells in x and y
+        n_z=16,     # number of cells in z
+        z_dom=500.0 # domain size in z (m)
+    ):
     """
-    Square XY extent covering topo; 'CCN' => centered x/y, z goes negative.
+    Returns tensor with origin (0, 0, 0) where x and y is +ve and z is -ve.
     """
-    x_min, x_max = float(topo_xyz[:,0].min()), float(topo_xyz[:,0].max())
-    y_min, y_max = float(topo_xyz[:,1].min()), float(topo_xyz[:,1].max())
-    L = max(x_max - x_min, y_max - y_min)
-    hx = [(L / n_xy, n_xy)]
-    hy = [(L / n_xy, n_xy)]
+    hx = [(topo_xyz[-1,0] / n_xy, n_xy)]
+    hy = [(topo_xyz[-1,1] / n_xy, n_xy)]
     hz = [(z_dom / n_z, n_z)]
-    return TensorMesh([hx, hy, hz], "CCN")
+    return TensorMesh([hx, hy, hz], "00N")
 
 
 def init_model(mesh, topo_xyz, background_density=0.0):
@@ -67,93 +61,65 @@ def init_model(mesh, topo_xyz, background_density=0.0):
     return ind_active, nC, model_map, true_model
 
 
-def add_random_blocks(
-    mesh,
+def add_random_blocks(              # should this be a random walk? does that better reflect geophyics? is it worth it at this stage?
+    mesh,   
     ind_active,
-    base_model=None,
-    n_blocks=1,
-    size_frac_range=(0.05, 0.30),
-    density_range=(0.0, 2.0), 
-    seed=90,
-    max_tries=200,
-    enforce_nonoverlap=True,
-):
+    model,
+    n_blocks=1,                     # number of blocks
+    size_frac_range=(0.05, 0.30),   # size as fraction of domain size
+    density_range=(0.0, 1.0),       # density contrast range (g/cc)
+    seed=0,
+    max_tries=50,
+    enforce_nonoverlap=False,       # enforce non-overlapping blocks
+    ):
     """
-    Paint axis-aligned rectangular prisms on ACTIVE cells.
-    Returns (model, blocks_mask_on_active).
+    Density contrast generator. Returns density contrast model and tracks inidces of blocks in 'occupied'.
     """
+    rng = np.random.default_rng(seed)
     fmin, fmax = size_frac_range
     assert fmax > 0 and fmin > 0 and fmax >= fmin, "size_frac_range must be > 0"
-    rng = np.random.default_rng(seed)
-
-    CCa = mesh.gridCC[ind_active]
-    x, y, z = CCa[:, 0], CCa[:, 1], CCa[:, 2]
-    x_min, x_max = float(x.min()), float(x.max())
-    y_min, y_max = float(y.min()), float(y.max())
-    z_min, z_max = float(z.min()), float(z.max())
-    Lx, Ly, Lz = x_max - x_min, y_max - y_min, z_max - z_min
-
-    model = np.zeros(ind_active.sum(), dtype=float) if base_model is None else base_model.copy()
-    occupied = np.zeros_like(model, dtype=bool)
-
+    CCa = mesh.gridCC[ind_active]   # only generate for active cells
+    mins, maxs = CCa.min(0), CCa.max(0)
+    span = maxs - mins
+    occupied = np.zeros_like(model, dtype=bool) # track occupied cells
     for k in range(n_blocks):
-        placed = False
         for _ in range(max_tries):
-            sx, sy, sz = (rng.uniform(fmin, fmax)*Lx, rng.uniform(fmin, fmax)*Ly, rng.uniform(fmin, fmax)*Lz)
-            cx = rng.uniform(x_min + sx/2, x_max - sx/2)
-            cy = rng.uniform(y_min + sy/2, y_max - sy/2)
-            cz = rng.uniform(z_min + sz/2, z_max - sz/2)
-            x0, x1 = cx - sx/2, cx + sx/2
-            y0, y1 = cy - sy/2, cy + sy/2
-            z0, z1 = cz - sz/2, cz + sz/2
-
-            mask = (x >= x0) & (x <= x1) & (y >= y0) & (y <= y1) & (z >= z0) & (z <= z1)
-            if mask.sum() == 0:
+            size = rng.uniform(fmin, fmax, 3) * span # size in x,y,z
+            center = rng.uniform(mins + size / 2, maxs - size / 2) # center in x,y,z
+            lo, hi = center - size / 2, center + size / 2 # bounds in x,y,z
+            mask = np.all((CCa >= lo) & (CCa <= hi), axis=1) # mask on active cells
+            if not mask.any(): # check if blocks are generated within tensor bounds
                 continue
-            if enforce_nonoverlap and np.any(occupied & mask):
+            if enforce_nonoverlap and np.any(occupied & mask): # check for overlap
                 continue
-
             model[mask] = rng.uniform(*density_range)
             occupied |= mask
-            placed = True
             break
-
-        if not placed:
-            raise RuntimeError(f"Could not place block {k+1}/{n_blocks} after {max_tries} tries."
-                               " Adjust size_frac_range or disable enforce_nonoverlap.")
-
+        else:
+            raise RuntimeError(
+                f"Could not place block {k+1}/{n_blocks} after {max_tries} tries."
+            )
     return model, occupied
 
 
 def gravity_survey(
     topo_xyz,
-    n_per_axis=20,
-    components=("gz",),
-):
+    n_per_axis=32,             # number of receivers per axis (x/y), should match tensor discretization
+    components=("gz",),        # gravity components to measure
+    ):
     """
     Build receiver grid at topography surface; returns (receiver_locations, survey).
-    Components e.g. ('gz',), ('gx','gy','gz'), or ('gxx','gxy',...).
     """
-    x_min, x_max = float(topo_xyz[:, 0].min()), float(topo_xyz[:, 0].max())
-    y_min, y_max = float(topo_xyz[:, 1].min()), float(topo_xyz[:, 1].max())
-    xs = np.linspace(x_min, x_max, n_per_axis)
-    ys = np.linspace(y_min, y_max, n_per_axis)
-    X, Y = np.meshgrid(xs, ys, indexing="xy")
-    rx_xy = np.c_[X.ravel(), Y.ravel()]
-
+    rx_xy = np.array(np.meshgrid(
+    np.linspace(topo_xyz[-1,0], topo_xyz[0,0], n_per_axis),
+    np.linspace(topo_xyz[-1,1], topo_xyz[0,1], n_per_axis),
+    indexing="xy"
+    )).reshape(2, -1).T
     fun = LinearNDInterpolator(topo_xyz[:, :2], topo_xyz[:, 2], fill_value=np.nan)
     z = fun(rx_xy)
     if np.isnan(z).any():
-        n_bad = int(np.isnan(z).sum())
-        bad_ix = np.flatnonzero(np.isnan(z))[:min(5, n_bad)]
-        bad_pts = rx_xy[bad_ix]
-        msg = (
-            f"[gravity_survey] ERROR: {n_bad} receiver(s) fall outside the convex hull "
-            f"of topo_xyz. Example out-of-hull XY points:\n{bad_pts}\n"
-            "Fix: shrink the XY grid, densify/expand topo_xyz, or pre-interpolate onto a full grid."
-        )
+        msg = (f"{np.isnan(z).sum()} receivers outside convex hull; values set to NaN.")
         raise ValueError(msg)
-
     receiver_locations = np.c_[rx_xy, z]
     rx = gravity.receivers.Point(receiver_locations, components=list(components))
     src = gravity.sources.SourceField(receiver_list=[rx])
@@ -161,34 +127,36 @@ def gravity_survey(
     return receiver_locations, survey
 
 
-def add_noise(data, noise_level=0.05, seed=100):
+def add_noise(data, accuracy, confidence=0.95, seed=0):
     """
-    Add Gaussian noise to data.
-    `noise_level` is relative to max(|data|).
+    Simulate measurement uncertainty by adding Gaussian noise to data. 
+
+    Eg. gravimeter accuracy is 0.1 mGal with 95% confidence.
     """
     rng = np.random.default_rng(seed)
-    sigma = noise_level * np.abs(data).max()
+    z = (1.0 + confidence) / 2.0
+    sigma = accuracy / norm.ppf(z)
     return data + rng.normal(0.0, sigma, size=data.shape)
 
 
 def main():
     topo_xyz = create_topo()
 
-    mesh = create_mesh(topo_xyz, n_xy=40, n_z=20, z_dom=500.0)
+    mesh = create_mesh(topo_xyz, n_xy=32, n_z=16, z_dom=500.0)
     
     ind_active, nC, model_map, true_model = init_model(mesh, topo_xyz)
 
     true_model, blocks_mask = add_random_blocks(
         mesh=mesh,
         ind_active=ind_active,
-        base_model=true_model,
-        n_blocks=4,
+        model=true_model,
+        n_blocks=3,
         size_frac_range=(0.08, 0.30),
         density_range=(0.0, 2.0),
         enforce_nonoverlap=True,
     )
 
-    receiver_locations, survey = gravity_survey(topo_xyz, n_per_axis=20, components=("gz",))
+    receiver_locations, survey = gravity_survey(topo_xyz, n_per_axis=32, components=("gz",))
 
     sim = gravity.simulation.Simulation3DIntegral(
         survey=survey,
@@ -198,7 +166,7 @@ def main():
         engine="choclo",
     )
 
-    data = add_noise(sim.dpred(true_model))
+    data = add_noise(sim.dpred(true_model), accuracy=0.05, confidence=0.95, seed=0)
 
     try:
         from src.viz.samples import (
