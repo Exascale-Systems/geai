@@ -35,13 +35,13 @@ Density contrast (mesh, values, topography, survey locations) → Get true gravi
 
 ## Notes On Previous Work
 
-### Improved Gravity Inversion Method Based on Deep Learning with Physical Constraint and Its Application to the Airborne Gravity Data in East Antarctica
+#### Improved Gravity Inversion Method Based on Deep Learning with Physical Constraint and Its Application to the Airborne Gravity Data in East Antarctica
 - CNN UNET (2D --> 3D)
 - 20 000 samples
 - 1g/cm^3 contrast
 - 32 x 32 x 16 (1km cubes)
 
-### Deep Learning for 3-D Inversion of Gravity Data
+#### Deep Learning for 3-D Inversion of Gravity Data
 - CNN UNET (2D --> 3D)
 - 40 000 samples
 - 0.1-1g/cm^3
@@ -49,21 +49,21 @@ Density contrast (mesh, values, topography, survey locations) → Get true gravi
 - 64 x 64 x 32 (50m spacing)
 - single block; single dipping slab; combined blocksl; combined dipping slabs
 
-### 3-D Gravity Inversion Based on Deep Convolution  Neural Networks
+#### 3-D Gravity Inversion Based on Deep Convolution  Neural Networks
 - CNN UNET (2D --> 3D Virtual (50 channels represent depth))
 - 14 000 samples
 - 3:1:1 ratio
 - 112 x 112 x 50 channels (50m spacing)
 - one, two, four prism
 
-### Three-dimensional gravity inversion  based on 3D U-Net++*
+#### Three-dimensional gravity inversion  based on 3D U-Net++*
 - CNN UNET (3D --> 3D)
 - 12 000 samples
 - 32 x 32 x 16
 - 5:1 ratio
 - difference from 3D UNET (plain skips vs dense/nested skips)
 
-### Three-Dimensional Gravity Inversion Based on Attention Feature Fusion
+#### Three-Dimensional Gravity Inversion Based on Attention Feature Fusion
 - CNN UNET (2D --> 3D)
 - 32 x 32 x 16 (50m)
 - 22 000 samples
