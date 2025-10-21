@@ -18,7 +18,6 @@ def generate_batch(
     mesh = create_mesh(topo_xyz, n_xy=n_xy, n_z=n_z, z_dom=z_dom)
     ind_active, nC, model_map, _ = init_model(mesh, topo_xyz)
 
-    # survey/receivers once
     receiver_locations, survey = gravity_survey(
         topo_xyz, n_per_axis=n_per_axis, components=("gz",)
     )
