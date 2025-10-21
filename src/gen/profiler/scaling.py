@@ -8,7 +8,7 @@ def profile_scaling(
     n_values=(16, 32, 64),
     batch_size=3,
     base_seed=0,
-    out_dir="data/profile_scaling/",
+    out_dir="src/gen/profiler/logs",
 ):
     times = []
     for n in n_values:

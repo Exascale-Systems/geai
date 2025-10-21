@@ -1,5 +1,5 @@
 from src.gen.gen import *
-from src.io.hdf5_o import MasterWriter
+from src.gen.io.hdf5_o import MasterWriter
 from tqdm import tqdm  # progress bar
 
 
@@ -17,7 +17,7 @@ def generate_batch(
     mesh = create_mesh(topo_xyz=topo_xyz, n_xy=n_xy, n_z=n_z, z_dom=z_dom)
     ind_active, nC, model_map, _ = init_model(mesh=mesh, topo_xyz=topo_xyz)
     receiver_locations, survey = gravity_survey(
-        topo_xyz=topo_xyz, n_per_axis=n_xy, components=("gz")
+        topo_xyz=topo_xyz, n_per_axis=n_xy, components=("gz",)
     )
     sim = gravity.simulation.Simulation3DIntegral(
         survey=survey,
