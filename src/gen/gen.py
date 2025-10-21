@@ -8,7 +8,7 @@ from simpeg.potential_fields import gravity
 
 
 def create_topo(
-        x_dom=1e3, y_dom=1e3,   # domain size in x/y (m)
+        x_dom=1.6e3, y_dom=1.6e3,   # domain size in x/y (m)
         dx=50, dy=50,           # grid spacing in x/y (m)   
         fbm_amp=0.0,            # amplitude of topography (set to 0 for flat)
         seed=0,                 # random seed
@@ -127,7 +127,7 @@ def gravity_survey(
     return receiver_locations, survey
 
 
-def add_noise(data, accuracy, confidence=0.95, seed=0):
+def add_noise(shape, accuracy, confidence=0.95, seed=0):
     """
     Simulate measurement uncertainty by adding Gaussian noise to data. 
 
@@ -136,7 +136,7 @@ def add_noise(data, accuracy, confidence=0.95, seed=0):
     rng = np.random.default_rng(seed)
     z = (1.0 + confidence) / 2.0
     sigma = accuracy / norm.ppf(z)
-    return data + rng.normal(0.0, sigma, size=data.shape)
+    return rng.normal(0.0, sigma, size=shape)
 
 
 def main():
@@ -166,7 +166,8 @@ def main():
         engine="choclo",
     )
 
-    data = add_noise(sim.dpred(true_model), accuracy=0.05, confidence=0.95, seed=0)
+    y = sim.dpred(true_model)
+    y += add_noise(y.shape, accuracy=0.05, confidence=0.95, seed=0)
 
     try:
         from src.viz.samples import (
@@ -176,7 +177,7 @@ def main():
         )
         plot_topography(topo_xyz)
         plot_density_contrast_3D_voxels(mesh, ind_active, blocks_mask)
-        plot_gravity_measurements(receiver_locations, data)
+        plot_gravity_measurements(receiver_locations, y)
     except Exception as e:
         print("[plot skipped]", e)
 
