@@ -6,7 +6,7 @@ def generate_batch(
     out_path="data/master.h5",
     batch_size=10,                          # number of samples to generate 
     x_dom=3.2e3, y_dom=3.2e3, z_dom=1.6e3,  # domain size (m)
-    n_xy=64, n_z=32,                        # mesh resolution
+    n_xy=32, n_z=16,                        # mesh resolution
     n_blocks=1, size_frac=(0.08, 0.30), density_range=(0.0, 1.0), # random blocks generator
     base_seed=0,
     accuracy = 0.5e-3, confidence = 0.95    # noise parameters

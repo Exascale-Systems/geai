@@ -1,87 +1,53 @@
-import torch
-import torch.nn as nn
+import torch, torch.nn as nn
 from torch.utils.data import DataLoader, random_split
+from tqdm.auto import tqdm
+import matplotlib.pyplot as plt
+
 from src.load import MasterDataset, _worker_init_fn
 from src.transforms import make_transform
 from src.model import GravInvNet
 
-# ----- Dataset + transform -----
+# data
 ds = MasterDataset("data/master.h5")
 ds.transform = make_transform(ds.shape_cells)
+def collate(b): xs, ys, ms = zip(*[(x,y,m) for x,y,m,_ in b]); return torch.stack(xs), torch.stack(ys), torch.stack(ms)
+g = torch.Generator().manual_seed(0) 
+n=len(ds); n_tr=max(1,int(0.8*n))
+n_va=n-n_tr
+tr_ds, va_ds = random_split(ds,[n_tr,n_va],generator=g)
+bs=min(4,n_tr)
+tr_ld = DataLoader(tr_ds,batch_size=bs,shuffle=True,num_workers=2,worker_init_fn=_worker_init_fn,collate_fn=collate)
+va_ld = DataLoader(va_ds,batch_size=bs,shuffle=False,num_workers=2,worker_init_fn=_worker_init_fn,collate_fn=collate)
 
-def collate(batch):
-    xs, ys, masks = [], [], []
-    for x, y, mask, _ in batch:
-        xs.append(x)     # (1,H,W)
-        ys.append(y)     # (Z,H,W)
-        masks.append(mask)
-    return (
-        torch.stack(xs, dim=0),     # (B,1,H,W)
-        torch.stack(ys, dim=0),     # (B,Z,H,W)
-        torch.stack(masks, dim=0),  # (B,Z,H,W)
-    )
-
-# ----- Train/val split (10 samples -> 8/2) -----
-n_total = len(ds)                 # 10
-n_train = max(1, int(0.8 * n_total))
-n_val   = n_total - n_train
-train_ds, val_ds = random_split(ds, [n_train, n_val])
-
-# Small batches (BatchNorm hates B=1; try B=4 if you can)
-batch_size = min(4, n_train)     # e.g., 4
-num_workers = 2                   # set 0 on Windows if you see issues
-
-train_loader = DataLoader(
-    train_ds, batch_size=batch_size, shuffle=True,
-    num_workers=num_workers, worker_init_fn=_worker_init_fn, collate_fn=collate
-)
-
-val_loader = DataLoader(
-    val_ds, batch_size=batch_size, shuffle=False,
-    num_workers=num_workers, worker_init_fn=_worker_init_fn, collate_fn=collate
-)
-
-# ----- Device / model / optimizer -----
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print("Using device:", device)
-
-net = GravInvNet().to(device)
-opt = torch.optim.SGD(net.parameters(), lr=0.1, momentum=0.9)
-
-# Optional: freeze BatchNorm stats (helps with tiny batches)
+# model, hyperparams, loss
+dev = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+net = GravInvNet().to(dev)
 for m in net.modules():
-    if isinstance(m, (nn.BatchNorm2d, nn.BatchNorm3d)):
-        m.eval()                 # use running stats, don’t update them
+    if isinstance(m,(nn.BatchNorm2d,nn.BatchNorm3d)): m.eval()
+opt = torch.optim.SGD(net.parameters(),lr=1e-2,momentum=0.9,weight_decay=1e-4)
+masked_mse=lambda p,t,m:((p-t)[m]**2).mean()
 
-def masked_mse(pred, target, mask):
-    return ((pred - target)[mask] ** 2).mean()
-
-# ----- One epoch helper -----
-def run_epoch(loader, train=True):
+# single epoch (forward --> backward pass)
+def run_epoch(ld,train=True):
     net.train(train)
-    # keep BN in eval if you froze it above
     for m in net.modules():
-        if isinstance(m, (nn.BatchNorm2d, nn.BatchNorm3d)):
-            m.eval()
-
-    total, n = 0.0, 0
-    for gz, tgt, mask in loader:
-        gz, tgt, mask = gz.to(device), tgt.to(device), mask.to(device)
-        pred = net(gz)
-        loss = masked_mse(pred, tgt, mask)
-
+        if isinstance(m,(nn.BatchNorm2d,nn.BatchNorm3d)): m.eval()
+    tot,n=0.0,0
+    for gz,tgt,mask in ld:
+        gz,tgt,mask=gz.to(dev),tgt.to(dev),mask.to(dev)
+        pred=net(gz); loss=masked_mse(pred,tgt,mask)
         if train:
-            opt.zero_grad()
-            loss.backward()
-            opt.step()
+            opt.zero_grad(set_to_none=True); loss.backward(); nn.utils.clip_grad_norm_(net.parameters(),1.0); opt.step()
+        b=gz.size(0); tot+=loss.item()*b; n+=b
+    return tot/max(1,n)
 
-        bs = gz.size(0)
-        total += loss.item() * bs
-        n += bs
-    return total / max(1, n)
+E=100; tr_hist,va_hist=[],[]
+pbar=tqdm(range(E),desc="training",ncols=100)
+for e in pbar:
+    tr=run_epoch(tr_ld,True); va=run_epoch(va_ld,False)
+    tr_hist.append(tr); va_hist.append(va)
+    pbar.set_postfix(train=f"{tr:.4f}",val=f"{va:.4f}")
 
-# ----- Training loop -----
-for epoch in range(5):
-    tr = run_epoch(train_loader, train=True)
-    va = run_epoch(val_loader,   train=False)
-    print(f"epoch {epoch:02d} | train {tr:.6f} | val {va:.6f}")
+# plot training history
+plt.plot(tr_hist,label='train'); plt.plot(va_hist,label='val')
+plt.xlabel('epoch'); plt.ylabel('masked MSE'); plt.legend(); plt.tight_layout(); plt.show()
