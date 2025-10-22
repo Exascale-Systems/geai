@@ -141,11 +141,8 @@ def add_noise(shape, accuracy, confidence=0.95, seed=0):
 
 def main():
     topo_xyz = create_topo()
-
     mesh = create_mesh(topo_xyz, n_xy=32, n_z=16, z_dom=500.0)
-    
     ind_active, nC, model_map, true_model = init_model(mesh, topo_xyz)
-
     true_model, blocks_mask = add_random_blocks(
         mesh=mesh,
         ind_active=ind_active,
@@ -155,9 +152,7 @@ def main():
         density_range=(0.0, 2.0),
         enforce_nonoverlap=True,
     )
-
     receiver_locations, survey = gravity_survey(topo_xyz, n_per_axis=32, components=("gz",))
-
     sim = gravity.simulation.Simulation3DIntegral(
         survey=survey,
         mesh=mesh,
@@ -165,10 +160,8 @@ def main():
         active_cells=ind_active,
         engine="choclo",
     )
-
     y = sim.dpred(true_model)
     y += add_noise(y.shape, accuracy=0.05, confidence=0.95, seed=0)
-
     try:
         from src.viz.samples import (
             plot_topography,
@@ -180,9 +173,10 @@ def main():
         plot_gravity_measurements(receiver_locations, y)
     except Exception as e:
         print("[plot skipped]", e)
-
-    return dict(mesh=mesh, ind_active=ind_active, model=true_model,
-                blocks_mask=blocks_mask, survey=survey, receivers=receiver_locations, sim=sim)
+    return dict(
+        mesh=mesh, ind_active=ind_active, model=true_model,
+        blocks_mask=blocks_mask, survey=survey, receivers=receiver_locations, sim=sim
+        )
 
 
 if __name__ == "__main__":
