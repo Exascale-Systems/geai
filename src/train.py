@@ -40,6 +40,7 @@ def run_epoch(ld,train=True):
         b=gz.size(0); tot+=loss.item()*b; n+=b
     return tot/max(1,n)
 
+# training loop
 E=100; tr_hist,va_hist=[],[]
 pbar=tqdm(range(E),desc="training",ncols=100)
 for e in pbar:
