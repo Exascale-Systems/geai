@@ -1,5 +1,5 @@
 import h5py, numpy as np, torch
-from torch.utils.data import Dataset, DataLoader, get_worker_info
+from torch.utils.data import Dataset, get_worker_info, Subset
 
 class MasterDataset(Dataset):
     def __init__(self, master_path, transform=None):
@@ -44,5 +44,12 @@ class MasterDataset(Dataset):
 
 def _worker_init_fn(_):
     info = get_worker_info()
-    if info is not None:
-        info.dataset.close()
+    if info is None:
+        return
+    ds = info.dataset
+    # Unwrap nested Subset(s) made by random_split etc.
+    while isinstance(ds, Subset):
+        ds = ds.dataset
+    # Close the underlying file handle if the base dataset supports it
+    if hasattr(ds, "close"):
+        ds.close()
