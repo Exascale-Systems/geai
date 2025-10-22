@@ -1,7 +1,6 @@
 import time
 import numpy as np
 import matplotlib.pyplot as plt
-
 from src.gen.batch import generate_batch
 
 def profile_scaling(
@@ -39,7 +38,6 @@ def profile_scaling(
     t = np.array(times, dtype=float)
     coeffs = np.polyfit(np.log(n), np.log(t), 1)
     print(f"\nApprox. scaling law: time ∝ n^{coeffs[0]:.2f}")
-
 
 if __name__ == "__main__":
     profile_scaling()

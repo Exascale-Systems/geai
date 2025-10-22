@@ -6,7 +6,6 @@ from discretize.utils import active_from_xyz
 from simpeg import maps
 from simpeg.potential_fields import gravity
 
-
 def create_topo(
         x_dom=1.6e3, y_dom=1.6e3,   # domain size in x/y (m)
         dx=50, dy=50,           # grid spacing in x/y (m)   
@@ -34,7 +33,6 @@ def create_topo(
         Z += rng.normal(0.0, noise_sigma, size=Z.shape)
     return np.c_[X.ravel(), Y.ravel(), Z.ravel()]
 
-
 def create_mesh(
         topo_xyz, 
         n_xy=32,    # number of cells in x and y
@@ -49,7 +47,6 @@ def create_mesh(
     hz = [(z_dom / n_z, n_z)]
     return TensorMesh([hx, hy, hz], "00N")
 
-
 def init_model(mesh, topo_xyz, background_density=0.0):
     """
     Initialize the density model and active cell indices.
@@ -59,7 +56,6 @@ def init_model(mesh, topo_xyz, background_density=0.0):
     model_map = maps.IdentityMap(nP=nC)
     true_model = background_density * np.ones(nC)
     return ind_active, nC, model_map, true_model
-
 
 def add_random_blocks(              # should this be a random walk? does that better reflect geophyics? is it worth it at this stage?
     mesh,   
@@ -101,7 +97,6 @@ def add_random_blocks(              # should this be a random walk? does that be
             )
     return model, occupied
 
-
 def gravity_survey(
     topo_xyz,
     n_per_axis=32,             # number of receivers per axis (x/y), should match tensor discretization
@@ -137,7 +132,6 @@ def add_noise(shape, accuracy, confidence=0.95, seed=0):
     z = (1.0 + confidence) / 2.0
     sigma = accuracy / norm.ppf(z)
     return rng.normal(0.0, sigma, size=shape)
-
 
 def main():
     topo_xyz = create_topo()
@@ -177,7 +171,6 @@ def main():
         mesh=mesh, ind_active=ind_active, model=true_model,
         blocks_mask=blocks_mask, survey=survey, receivers=receiver_locations, sim=sim
         )
-
 
 if __name__ == "__main__":
     main()

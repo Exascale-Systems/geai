@@ -2,7 +2,6 @@ from src.gen.gen import *
 from src.io.hdf5_o import MasterWriter
 from tqdm import tqdm  # progress bar
 
-
 def generate_batch(
     out_path="data/master.h5",
     batch_size=10,                          # number of samples to generate 
@@ -46,7 +45,6 @@ def generate_batch(
             y += add_noise(y.shape, accuracy=accuracy, confidence=confidence, seed=seed)
             master.add(gz=y, receiver_locations=receiver_locations, true_model=true_model, ind_active=ind_active, seed=seed)
     return out_path
-
 
 if __name__ == "__main__":
     generate_batch()
