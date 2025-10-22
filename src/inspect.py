@@ -1,32 +1,46 @@
-# scripts/visualize_sample.py
-import numpy as np
+import numpy as np, torch
 from pathlib import Path
-from src.viz.samples import (
-    plot_topography,
-    plot_density_contrast_3D_voxels,
-    plot_gravity_measurements,
-)
+from src.viz.samples import plot_topography, plot_gravity_measurements, plot_density_contrast_3D_voxels
 from src.gen.gen import create_mesh
 from src.io.hdf5_i import MasterReader
+from src.load import MasterDataset
+from src.transforms import make_transform
+from src.model import GravInvNet
+
+def inspect_truth(h5_path: Path, seed_index: int = 1):
+    """Read one sample and return stuff."""
+    ds = MasterDataset(h5_path); nx, ny, nz = map(int, ds.shape_cells)
+    with MasterReader(h5_path) as mr:
+        seed = mr.list_seeds()[seed_index]
+        s = mr.read(seed)
+    rx, gz = s["receiver_locations"], s["gz"]
+    ind = s["ind_active"].astype(bool)                 
+    true = np.zeros_like(ind, float)
+    true[ind] = s["true_model"]              
+    mesh = create_mesh(np.flip(rx, 0), n_xy=nx, n_z=nz, z_dom=1.6e3)
+    return s, rx, gz, (nx, ny, nz), ind, true, mesh
+
+@torch.no_grad()
+def inspect_prediction(sample: dict, shape_cells, device, net: GravInvNet):
+    """Run net on sample and return prediction."""
+    x, _, _, _ = make_transform(shape_cells)(sample)        # (1,H,W)
+    x = x.unsqueeze(0).to(device)                           # (1,1,H,W)
+    net.eval()
+    pred = net(x)[0]                                        # (Z,H,W)
+    pred_full = pred.permute(2,1,0).cpu().numpy()           # (nx,ny,nz)
+    return pred_full.reshape(-1)                            # (nx*ny*nz,)
 
 def main():
     path = Path("data/master.h5")
-    with MasterReader(path) as mr:
-        seeds = mr.list_seeds()
-        print(f"Available seeds: {seeds[:5]}")
-        sample = mr.read(seeds[4])
-        gz = sample["gz"]
-        true_model = sample["true_model"]
-        ind_active = sample["ind_active"].astype(bool)
-        receiver_locations = sample["receiver_locations"]
-        plot_topography(receiver_locations)
-        plot_gravity_measurements(receiver_locations, gz)
-        full_model = np.zeros_like(ind_active, dtype=float)
-        full_model[ind_active] = true_model
-        blocks_mask = full_model > 0.0
-        receiver_locations = np.flip(receiver_locations, axis=0)
-        mesh = create_mesh(receiver_locations, n_xy=64, n_z=32, z_dom=1.6e3)
-        plot_density_contrast_3D_voxels(mesh, ind_active, blocks_mask)
+    sample, rx, gz, shape, ind, true, mesh = inspect_truth(path, seed_index=1)
+    plot_topography(rx)
+    plot_gravity_measurements(rx, gz)
+    plot_density_contrast_3D_voxels(mesh, ind, true > 0.0)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    net = GravInvNet().to(device)
+    pred_flat = inspect_prediction(sample, shape, device, net)
+    pred_blocks_flat = (pred_flat > 0.0) & ind
+    plot_density_contrast_3D_voxels(mesh, ind, pred_blocks_flat)
 
 if __name__ == "__main__":
     main()
