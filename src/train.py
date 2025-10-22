@@ -3,7 +3,7 @@ from torch.utils.data import DataLoader, random_split
 from tqdm.auto import tqdm
 import matplotlib.pyplot as plt
 from src.load import MasterDataset, _worker_init_fn
-from src.transforms import make_transform
+from src.transform import make_transform
 from src.model import GravInvNet
 
 # data
@@ -47,6 +47,9 @@ for e in pbar:
     tr=run_epoch(tr_ld,True); va=run_epoch(va_ld,False)
     tr_hist.append(tr); va_hist.append(va)
     pbar.set_postfix(train=f"{tr:.4f}",val=f"{va:.4f}")
+
+# save model
+torch.save({"model": net.state_dict()}, "checkpoints/best.pt")
 
 # plot training history
 plt.plot(tr_hist,label='train'); plt.plot(va_hist,label='val')

@@ -4,7 +4,7 @@ from src.viz.samples import plot_topography, plot_gravity_measurements, plot_den
 from src.gen.gen import create_mesh
 from src.io.hdf5_i import MasterReader
 from src.load import MasterDataset
-from src.transforms import make_transform
+from src.transform import make_transform
 from src.model import GravInvNet
 
 def inspect_truth(h5_path: Path, seed_index: int = 1):
@@ -38,6 +38,13 @@ def main():
     plot_density_contrast_3D_voxels(mesh, ind, true > 0.0)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     net = GravInvNet().to(device)
+    ckpt_path = Path("checkpoints/best.pt")
+    if ckpt_path.exists():
+        state = torch.load(ckpt_path, map_location=device)
+        net.load_state_dict(state["model"] if "model" in state else state)
+        print(f"Loaded trained model from {ckpt_path}")
+    else:
+        print("Using untrained model.")
     pred_flat = inspect_prediction(sample, shape, device, net)
     pred_blocks_flat = (pred_flat > 0.0) & ind
     plot_density_contrast_3D_voxels(mesh, ind, pred_blocks_flat)
