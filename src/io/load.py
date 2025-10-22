@@ -5,7 +5,6 @@ from torch.utils.data import Dataset, DataLoader, get_worker_info
 class MasterDataset(Dataset):
     def __init__(self, master_path, transform=None):
         self.master_path = str(master_path)
-        # Read just the index and globals once (fast)
         with h5py.File(self.master_path, "r") as f:
             self.seeds = sorted(map(int, f["samples"].keys()))
             g = f["globals"]
@@ -46,7 +45,6 @@ class MasterDataset(Dataset):
 
 
 def _worker_init_fn(_):
-    # Ensure each worker opens its own HDF5 handle
     info = get_worker_info()
     if info is not None:
         info.dataset.close()
