@@ -1,7 +1,6 @@
 import h5py, numpy as np, torch
 from torch.utils.data import Dataset, DataLoader, get_worker_info
 
-
 class MasterDataset(Dataset):
     def __init__(self, master_path, transform=None):
         self.master_path = str(master_path)
@@ -42,7 +41,6 @@ class MasterDataset(Dataset):
         if self._f is not None:
             self._f.close()
             self._f = None
-
 
 def _worker_init_fn(_):
     info = get_worker_info()

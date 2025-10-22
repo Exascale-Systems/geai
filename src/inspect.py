@@ -9,7 +9,6 @@ from src.viz.samples import (
 from src.gen.gen import create_mesh
 from src.io.hdf5_i import MasterReader
 
-
 def main():
     path = Path("data/master.h5")
     with MasterReader(path) as mr:
@@ -28,7 +27,6 @@ def main():
         receiver_locations = np.flip(receiver_locations, axis=0)
         mesh = create_mesh(receiver_locations, n_xy=64, n_z=32, z_dom=1.6e3)
         plot_density_contrast_3D_voxels(mesh, ind_active, blocks_mask)
-
 
 if __name__ == "__main__":
     main()
