@@ -6,6 +6,7 @@ from src.io.hdf5_i import MasterReader
 from src.load import MasterDataset
 from src.transform import make_transform
 from src.nn import GravInvNet
+from src.normalize import compute_stats
 
 def inspect_truth(h5_path: Path, seed_index: int = 1):
     """Read one sample and return stuff."""
@@ -22,9 +23,9 @@ def inspect_truth(h5_path: Path, seed_index: int = 1):
     return s, rx, gz, (nx, ny, nz), ind, true, mesh
 
 @torch.no_grad()
-def inspect_prediction(sample: dict, shape_cells, device, net: GravInvNet):
+def inspect_prediction(sample: dict, shape_cells, stats,device, net: GravInvNet):
     """Run net on sample and return prediction."""
-    x, _, _, _ = make_transform(shape_cells)(sample)        # (1,H,W)
+    x, _, _, _ = make_transform(shape_cells, stats)(sample)        # (1,H,W)
     x = x.unsqueeze(0).to(device)                           # (1,1,H,W)
     net.eval()
     pred = net(x)[0]                                        # (Z,H,W)
@@ -34,6 +35,7 @@ def inspect_prediction(sample: dict, shape_cells, device, net: GravInvNet):
 def main():
     path = Path("data/master.h5")
     sample, rx, gz, shape, ind, true, mesh = inspect_truth(path, seed_index=4)
+    stats = compute_stats(str(path), use_mask=False)
     # plot_topography(rx)
     # plot_gravity_measurements(rx, gz)
     plot_density_contrast_3D_voxels(mesh, ind, true > 0.0)
