@@ -3,7 +3,7 @@ from src.io.hdf5_o import MasterWriter
 from tqdm import tqdm  
 
 def generate_batch(
-    out_path="data2/master.h5",
+    out_path="data/master.h5",
     batch_size=20000,                         # number of samples to generate 
     x_dom=1.6e3, y_dom=1.6e3, z_dom=0.8e3,  # domain size (m)
     n_xy=32, n_z=16,                        # mesh resolution
