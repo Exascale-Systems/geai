@@ -57,15 +57,21 @@ def run_epoch(ld,train=True, ema_alpha=0.1):
     return tot/max(1,n)
 
 # training loop
-E=20000; tr_hist,va_hist=[],[]
-pbar=tqdm(range(1, E+1),desc="training",ncols=100)
+E=20000; 
+tr_hist=[None]*E; 
+min_loss = 1e-5
+pbar=tqdm(range(0, E),desc="training",ncols=100)
 for e in pbar:
     tr=run_epoch(tr_ld,True)
-    tr_hist.append(tr)
+    tr_hist[e]=tr
     pbar.set_postfix(train=f"{tr:.4f}")
+    if tr < min_loss:
+        print(f"Reached target loss {tr:.6f} at epoch {e}")
+        torch.save({'model': net.state_dict()}, 'checkpoints/overfit.pt')
+        break
 
 # save model
-torch.save({"model": net.state_dict()}, "checkpoints/best.pt")
+torch.save({"model": net.state_dict()}, "checkpoints/overfit.pt")
 
 # plot training history
 plt.plot(tr_hist,label='train')
