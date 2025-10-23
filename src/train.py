@@ -14,7 +14,7 @@ ds.transform = make_transform(ds.shape_cells, stats)
 def collate(b): xs, ys, ms = zip(*[(x,y,m) for x,y,m,_ in b]); return torch.stack(xs), torch.stack(ys), torch.stack(ms)
 g = torch.Generator().manual_seed(0) 
 n=len(ds) 
-n_tr=max(1,int(0.1*n)) # 80% train, 20% val
+n_tr=max(1,int(0.00005*n)) # 80% train, 20% val
 n_va=n-n_tr
 tr_ds, va_ds = random_split(ds,[n_tr,n_va],generator=g)
 bs=min(8,n_tr)
@@ -57,7 +57,7 @@ def run_epoch(ld,train=True, ema_alpha=0.1):
     return tot/max(1,n)
 
 # training loop
-E=80; tr_hist,va_hist=[],[]
+E=20000; tr_hist,va_hist=[],[]
 pbar=tqdm(range(1, E+1),desc="training",ncols=100)
 for e in pbar:
     tr=run_epoch(tr_ld,True)
