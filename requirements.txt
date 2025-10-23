@@ -6,3 +6,5 @@ simpeg
 h5py
 torch
 tqdm
+pyqt5
+discretize

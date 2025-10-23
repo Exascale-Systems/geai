@@ -25,13 +25,15 @@ Density contrast (mesh, values, topography, survey locations) → Get true gravi
 - 3:1:1 training, test, validation
 - 0-1g/cm^3
 - 32 x 32 x 16 (50m)
-- 1-4 blocks
+- 1 block?
 - topography?
 - noise?
 
 ### Training (UNET 2D --> 3D)
 
-[12000, 1, 32, 32] --> [12000, 1, 32, 32, 16]
+Trying to replicate *Deep Learning for 3-D Inversion of Gravity Data* by *Zhang et al.*
+
+<img src="documentation/zhang.png" alt="alt text" width="800" />
 
 ## Notes On Previous Work
 
