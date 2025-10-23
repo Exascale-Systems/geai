@@ -5,10 +5,12 @@ import matplotlib.pyplot as plt
 from src.load import MasterDataset, _worker_init_fn
 from src.transform import make_transform
 from src.nn import GravInvNet
+from src.normalize import compute_stats
 
 # data
+stats = compute_stats("data/master.h5", use_mask=False)
 ds = MasterDataset("data/master.h5")
-ds.transform = make_transform(ds.shape_cells)
+ds.transform = make_transform(ds.shape_cells, stats)
 def collate(b): xs, ys, ms = zip(*[(x,y,m) for x,y,m,_ in b]); return torch.stack(xs), torch.stack(ys), torch.stack(ms)
 g = torch.Generator().manual_seed(0) 
 n=len(ds) 
