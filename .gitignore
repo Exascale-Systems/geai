@@ -5,5 +5,5 @@ src/gen/profiler/__pycache__
 src/io/__pycache__
 src/viz/__pycache__
 /checkpoints/best.pt
-/checkpoints/__pycache__
+/data/master.h5
 

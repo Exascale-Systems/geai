@@ -3,7 +3,7 @@ from src.io.hdf5_o import MasterWriter
 from tqdm import tqdm  
 
 def generate_batch(
-    out_path="data/master.h5",
+    out_path="data2/master.h5",
     batch_size=20000,                         # number of samples to generate 
     x_dom=1.6e3, y_dom=1.6e3, z_dom=0.8e3,  # domain size (m)
     n_xy=32, n_z=16,                        # mesh resolution
@@ -28,7 +28,7 @@ def generate_batch(
     )
     true_model = np.zeros(nC, dtype=float)
     with MasterWriter(out_path, mesh.shape_cells, mesh.h[0], mesh.h[1], mesh.h[2]) as master:
-        for k in tqdm(range(batch_size), desc="Generating samples", unit="sample"):
+        for k in tqdm(range(batch_size), desc="Generating samples", unit="sample", ncols=100):
             seed = base_seed + k
             true_model.fill(0.0)
             true_model, _ = add_random_blocks(
