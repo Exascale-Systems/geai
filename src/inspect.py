@@ -49,7 +49,7 @@ def main():
     else:
         print("Using untrained model.")
     pred_flat = inspect_prediction(sample, shape, stats, device, net)
-    pred_blocks_flat = (pred_flat > 0.0065) & ind
+    pred_blocks_flat = (pred_flat > 0.8) & ind
     plot_density_contrast_3D_voxels(mesh, ind, pred_blocks_flat)
 
 if __name__ == "__main__":
