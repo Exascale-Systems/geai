@@ -20,7 +20,7 @@ tr_ld = DataLoader(tr_ds,batch_size=bs,shuffle=True,num_workers=2,worker_init_fn
 va_ld = DataLoader(va_ds,batch_size=bs,shuffle=False,num_workers=2,worker_init_fn=_worker_init_fn,collate_fn=collate, pin_memory=True)
 
 # model, hyperparams
-dev = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+dev = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
 net = GravInvNet().to(dev)
 opt = torch.optim.Adam(net.parameters(), lr=1e-3, weight_decay=0.0)
 
