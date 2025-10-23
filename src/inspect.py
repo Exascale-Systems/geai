@@ -16,8 +16,9 @@ def inspect_truth(h5_path: Path, seed_index: int = 1):
     rx, gz = s["receiver_locations"], s["gz"]
     ind = s["ind_active"].astype(bool)                 
     true = np.zeros_like(ind, float)
-    true[ind] = s["true_model"]              
-    mesh = create_mesh(np.flip(rx, 0), n_xy=nx, n_z=nz, z_dom=1.6e3)
+    true[ind] = s["true_model"]
+    z_dom = nz * ds.hz[0]           
+    mesh = create_mesh(np.flip(rx, 0), n_xy=nx, n_z=nz, z_dom=z_dom)
     return s, rx, gz, (nx, ny, nz), ind, true, mesh
 
 @torch.no_grad()

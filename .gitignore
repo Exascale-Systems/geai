@@ -6,4 +6,5 @@ src/io/__pycache__
 src/viz/__pycache__
 /checkpoints/best.pt
 /data/master.h5
+.venv/
 

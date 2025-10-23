@@ -4,3 +4,5 @@ matplotlib
 discretize
 simpeg
 h5py
+torch
+tqdm
