@@ -48,7 +48,7 @@ def main():
         print(f"Loaded trained model from {ckpt_path}")
     else:
         print("Using untrained model.")
-    pred_flat = inspect_prediction(sample, shape, device, net)
+    pred_flat = inspect_prediction(sample, shape, stats, device, net)
     pred_blocks_flat = (pred_flat > 0.0065) & ind
     plot_density_contrast_3D_voxels(mesh, ind, pred_blocks_flat)
 
