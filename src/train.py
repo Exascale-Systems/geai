@@ -19,19 +19,17 @@ bs=min(8,n_tr)
 tr_ld = DataLoader(tr_ds,batch_size=bs,shuffle=True,num_workers=2,worker_init_fn=_worker_init_fn,collate_fn=collate, pin_memory=True)
 va_ld = DataLoader(va_ds,batch_size=bs,shuffle=False,num_workers=2,worker_init_fn=_worker_init_fn,collate_fn=collate, pin_memory=True)
 
-# model, hyperparams, loss
+# model, hyperparams
 dev = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 net = GravInvNet().to(dev)
-# for m in net.modules():
-#     if isinstance(m,(nn.BatchNorm2d,nn.BatchNorm3d)): m.eval()
-opt = torch.optim.SGD(net.parameters(),lr=1e-2,momentum=0.9,weight_decay=1e-4)
-# masked_mse=lambda p,t,m:((p-t)[m]**2).mean()
+opt = torch.optim.Adam(net.parameters(), lr=1e-3, weight_decay=0.0)
+
+# masked MSE loss
 def masked_mse(pred, tgt, mask, eps=1e-12):
-    if mask.dtype != torch.bool:
-        mask = mask > 0.5  # accept 0/1 or float masks
-    diff2 = (pred - tgt)**2
-    num = (diff2 * mask).sum()
-    den = mask.sum().clamp_min(eps)
+    m = mask.float()
+    diff2 = (pred - tgt).square()
+    num = (diff2 * m).sum()
+    den = m.sum().clamp_min(eps)
     return num / den
 
 # single epoch (forward --> backward pass)
