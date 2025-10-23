@@ -4,5 +4,6 @@ src/gen/__pycache__
 src/gen/profiler/__pycache__
 src/io/__pycache__
 src/viz/__pycache__
-/checkpoints
+/checkpoints/best.pt
+/checkpoints/__pycache__
 

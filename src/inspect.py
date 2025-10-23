@@ -5,7 +5,7 @@ from src.gen.gen import create_mesh
 from src.io.hdf5_i import MasterReader
 from src.load import MasterDataset
 from src.transform import make_transform
-from src.model import GravInvNet
+from src.nn import GravInvNet
 
 def inspect_truth(h5_path: Path, seed_index: int = 1):
     """Read one sample and return stuff."""
@@ -32,9 +32,9 @@ def inspect_prediction(sample: dict, shape_cells, device, net: GravInvNet):
 
 def main():
     path = Path("data/master.h5")
-    sample, rx, gz, shape, ind, true, mesh = inspect_truth(path, seed_index=1)
-    plot_topography(rx)
-    plot_gravity_measurements(rx, gz)
+    sample, rx, gz, shape, ind, true, mesh = inspect_truth(path, seed_index=4)
+    # plot_topography(rx)
+    # plot_gravity_measurements(rx, gz)
     plot_density_contrast_3D_voxels(mesh, ind, true > 0.0)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     net = GravInvNet().to(device)
@@ -46,7 +46,7 @@ def main():
     else:
         print("Using untrained model.")
     pred_flat = inspect_prediction(sample, shape, device, net)
-    pred_blocks_flat = (pred_flat > 0.0) & ind
+    pred_blocks_flat = (pred_flat > 0.0065) & ind
     plot_density_contrast_3D_voxels(mesh, ind, pred_blocks_flat)
 
 if __name__ == "__main__":
