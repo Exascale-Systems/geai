@@ -1,7 +1,7 @@
 import numpy as np
 import os, matplotlib
 if os.environ.get("DISPLAY"):
-    matplotlib.use("TkAgg") 
+    matplotlib.use("Qt5Agg") 
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from simpeg import maps
