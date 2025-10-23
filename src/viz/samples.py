@@ -1,9 +1,11 @@
 import numpy as np
+import os, matplotlib
+if os.environ.get("DISPLAY"):
+    matplotlib.use("TkAgg") 
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from simpeg import maps
 from simpeg.utils import plot2Ddata
-
 
 def plot_topography(topo_xyz):
     """
@@ -18,7 +20,6 @@ def plot_topography(topo_xyz):
     ax.set_zlabel('Z')
     plt.show()
     
-
 def plot_density_contrast_2D(mesh, ind_active, true_model):
     """
     Plot a 2D density contrast model slice with colorbar.
@@ -46,7 +47,6 @@ def plot_density_contrast_2D(mesh, ind_active, true_model):
     cbar.set_label("$g/cm^3$", rotation=270, labelpad=15, size=12)
     plt.show()
 
-
 def plot_density_contrast_3D(mesh, ind_active, blocks_mask):
     """
     Create a 3D scatter plot of the density contrast model.
@@ -57,7 +57,6 @@ def plot_density_contrast_3D(mesh, ind_active, blocks_mask):
     ax.scatter(CCa[~blocks_mask,0], CCa[~blocks_mask,1], CCa[~blocks_mask,2], s=1, alpha=0.04)
     ax.scatter(CCa[blocks_mask,0],   CCa[blocks_mask,1],   CCa[blocks_mask,2],   s=1)
     plt.show()
-
 
 def plot_density_contrast_3D_voxels(mesh, ind_active, blocks_mask):
     """
@@ -97,7 +96,6 @@ def plot_density_contrast_3D_voxels(mesh, ind_active, blocks_mask):
     ax.set_title("3D Density Blocks Overlay on Active Volume")
     plt.tight_layout()
     plt.show()
-
 
 def plot_gravity_measurements(receiver_locations, dpred, title="Gravity Anomaly (Z-component)",
                          units="$mgal$", show_points=True, cmap="bwr", ncontour=30):
