@@ -4,7 +4,7 @@ from tqdm import tqdm
 
 def generate_batch(
     out_path="data/master.h5",
-    batch_size=20000,                         # number of samples to generate 
+    batch_size=8,                         # number of samples to generate 
     x_dom=1.6e3, y_dom=1.6e3, z_dom=0.8e3,  # domain size (m)
     n_xy=32, n_z=16,                        # mesh resolution
     n_blocks=1, size_frac=(0.08, 0.30), density_range=(0.0, 1.0), # random blocks generator
