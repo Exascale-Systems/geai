@@ -1,9 +1,8 @@
 import torch
+from src.normalize import norm
 
 def make_transform(shape_cells, stats):
     nx, ny, nz = map(int, shape_cells)
-
-    def norm(a, a0, a1): return 2*(a - a0)/(a1 - a0) - 1
 
     def to_tensors(sample):
         gz = norm(sample["gz"], stats["gz_min"], stats["gz_max"])

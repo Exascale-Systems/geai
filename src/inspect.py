@@ -6,7 +6,7 @@ from src.io.hdf5_i import MasterReader
 from src.load import MasterDataset
 from src.transform import make_transform
 from src.nn import GravInvNet
-from src.normalize import compute_stats
+from src.normalize import compute_stats, denorm
 
 def inspect_truth(h5_path: Path, seed_index: int = 1):
     """Read one sample and return stuff."""
@@ -32,15 +32,9 @@ def inspect_prediction(sample: dict, shape_cells, stats,device, net: GravInvNet)
     pred_full = pred.permute(2,1,0).cpu().numpy()           # (nx,ny,nz)
     return pred_full.reshape(-1)                            # (nx*ny*nz,)
 
-def denorm_y(y_norm: np.ndarray, stats: dict) -> np.ndarray:
-    a = float(stats["rho_min"])
-    b = float(stats["rho_max"])
-    y_norm = np.clip(y_norm, -1.0, 1.0)
-    return ((y_norm + 1.0) * 0.5) * (b - a) + a
-
 def main():
     path = Path("data/master.h5")
-    sample, rx, gz, shape, ind, true, mesh = inspect_truth(path, seed_index=3)
+    sample, rx, gz, shape, ind, true, mesh = inspect_truth(path, seed_index=0)
     # plot_topography(rx)
     # plot_gravity_measurements(rx, gz)
     plot_density_contrast_3D_voxels(mesh, ind, true > 0.0)
@@ -53,9 +47,9 @@ def main():
         print(f"Loaded trained model from {ckpt_path}")
     else:
         print("Using untrained model.")
-    stats = compute_stats(str(path), use_mask=True)
+    stats = compute_stats(str(path))
     pred_flat = inspect_prediction(sample, shape, stats, device, net)
-    pred_phys_flat = denorm_y(pred_flat, stats)           # physical units (e.g., g/cc)
+    pred_phys_flat = denorm(pred_flat, stats)           # physical units (e.g., g/cc)
     block_flat = pred_phys_flat > 0.2
     plot_density_contrast_3D_voxels(mesh, ind, block_flat)
 
