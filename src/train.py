@@ -14,7 +14,7 @@ ds.transform = make_transform(ds.shape_cells, stats)
 def collate(b): xs, ys, ms = zip(*[(x,y,m) for x,y,m,_ in b]); return torch.stack(xs), torch.stack(ys), torch.stack(ms)
 g = torch.Generator().manual_seed(0) 
 n=len(ds) 
-n_tr=max(1,int(0.5*n)) # 80% train, 20% val
+n_tr=max(1,int(0.5*n))
 n_va=n-n_tr
 tr_ds, va_ds = random_split(ds,[n_tr,n_va],generator=g)
 bs=min(4,n_tr)
