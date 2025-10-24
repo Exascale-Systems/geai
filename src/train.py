@@ -22,8 +22,8 @@ n=len(ds)
 n_tr=max(1,int(1*n)) # 80% train, 20% val
 n_va=n-n_tr
 tr_ds, va_ds = random_split(ds,[n_tr,n_va],generator=g)
-pathlib.Path("training split").mkdir(parents=True, exist_ok=True)
-np.savez("training split/idx_init.npz", tr=np.array(tr_ds.indices), va=np.array(va_ds.indices))
+pathlib.Path("training/split").mkdir(parents=True, exist_ok=True)
+np.savez("training/split/idx_init.npz", tr=np.array(tr_ds.indices), va=np.array(va_ds.indices))
 
 bs=min(4,n_tr)
 tr_ld = DataLoader(tr_ds,batch_size=bs,shuffle=True,num_workers=2,worker_init_fn=_worker_init_fn,collate_fn=collate, pin_memory=True)
