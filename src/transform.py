@@ -2,6 +2,9 @@ import torch
 from src.normalize import norm
 
 def make_transform(shape_cells, stats):
+    """
+    transform generator data to torch tensors in correct shape.
+    """
     nx, ny, nz = map(int, shape_cells)
 
     def to_tensors(sample):

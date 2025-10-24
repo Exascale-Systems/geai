@@ -33,14 +33,14 @@ def inspect_prediction(sample: dict, shape_cells, stats,device, net: GravInvNet)
     return pred_full.reshape(-1)                            # (nx*ny*nz,)
 
 def main():
-    path = Path("data/master.h5")
+    path = Path("data/overfit.h5")
     sample, rx, gz, shape, ind, true, mesh = inspect_truth(path, seed_index=0)
     # plot_topography(rx)
     # plot_gravity_measurements(rx, gz)
     plot_density_contrast_3D_voxels(mesh, ind, true > 0.0)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     net = GravInvNet().to(device)
-    ckpt_path = Path("checkpoints/overfit.pt")
+    ckpt_path = Path("weights/overfit.pt")
     if ckpt_path.exists():
         state = torch.load(ckpt_path, map_location=device)
         net.load_state_dict(state["model"] if "model" in state else state)

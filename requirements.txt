@@ -9,3 +9,4 @@ tqdm
 pyqt5
 discretize
 choclo
+tensorboard
