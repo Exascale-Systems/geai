@@ -1,9 +1,9 @@
 import numpy as np
-import os, matplotlib
-if os.environ.get("DISPLAY"):
-    matplotlib.use("Qt5Agg") 
-import matplotlib.pyplot as plt
+import os
 import matplotlib as mpl
+if os.environ.get("DISPLAY"):
+    mpl.use("Qt5Agg") 
+import matplotlib.pyplot as plt
 from simpeg import maps
 from simpeg.utils import plot2Ddata
 

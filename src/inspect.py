@@ -32,25 +32,32 @@ def inspect_prediction(sample: dict, shape_cells, stats,device, net: GravInvNet)
     pred_full = pred.permute(2,1,0).cpu().numpy()           # (nx,ny,nz)
     return pred_full.reshape(-1)                            # (nx*ny*nz,)
 
+def denorm_y(y_norm: np.ndarray, stats: dict) -> np.ndarray:
+    a = float(stats["rho_min"])
+    b = float(stats["rho_max"])
+    y_norm = np.clip(y_norm, -1.0, 1.0)
+    return ((y_norm + 1.0) * 0.5) * (b - a) + a
+
 def main():
     path = Path("data/master.h5")
-    sample, rx, gz, shape, ind, true, mesh = inspect_truth(path, seed_index=4)
-    stats = compute_stats(str(path), use_mask=False)
+    sample, rx, gz, shape, ind, true, mesh = inspect_truth(path, seed_index=3)
     # plot_topography(rx)
     # plot_gravity_measurements(rx, gz)
     plot_density_contrast_3D_voxels(mesh, ind, true > 0.0)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     net = GravInvNet().to(device)
-    ckpt_path = Path("checkpoints/best.pt")
+    ckpt_path = Path("checkpoints/overfit.pt")
     if ckpt_path.exists():
         state = torch.load(ckpt_path, map_location=device)
         net.load_state_dict(state["model"] if "model" in state else state)
         print(f"Loaded trained model from {ckpt_path}")
     else:
         print("Using untrained model.")
+    stats = compute_stats(str(path), use_mask=True)
     pred_flat = inspect_prediction(sample, shape, stats, device, net)
-    pred_blocks_flat = (pred_flat > 0.8) & ind
-    plot_density_contrast_3D_voxels(mesh, ind, pred_blocks_flat)
+    pred_phys_flat = denorm_y(pred_flat, stats)           # physical units (e.g., g/cc)
+    block_flat = pred_phys_flat > 0.2
+    plot_density_contrast_3D_voxels(mesh, ind, block_flat)
 
 if __name__ == "__main__":
     main()
