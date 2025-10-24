@@ -6,7 +6,7 @@ src/io/__pycache__
 src/viz/__pycache__
 .venv/
 data/*
-training/checkpoints/*
+training/checkpoints/best.pt
 weights/*
 
 

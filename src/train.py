@@ -79,9 +79,9 @@ for e in pbar:
     pbar.set_postfix(train=f"{tr:.4f}")
     if tr < min_loss:
         print(f"Reached target loss {tr:.6f} at epoch {e}")
-        torch.save({'model': net.state_dict()}, 'checkpoints/overfit.pt')
+        torch.save({'model': net.state_dict()}, 'checkpoints/best.pt')
         break
 writer.flush()
 
 # save model
-torch.save({"model": net.state_dict()}, "checkpoints/overfit.pt")
+torch.save({"model": net.state_dict()}, "checkpoints/best.pt")
