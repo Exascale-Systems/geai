@@ -8,7 +8,7 @@ from src.transform import make_transform
 from src.nn import GravInvNet
 from src.normalize import compute_stats, denorm
 
-def inspect_truth(h5_path: Path, seed_index: int = 1):
+def inspect_truth(h5_path: Path, seed_index: int = 0):
     """Read one sample and return stuff."""
     ds = MasterDataset(h5_path); nx, ny, nz = map(int, ds.shape_cells)
     with MasterReader(h5_path) as mr:
@@ -25,7 +25,7 @@ def inspect_truth(h5_path: Path, seed_index: int = 1):
 @torch.no_grad()
 def inspect_prediction(sample: dict, shape_cells, stats,device, net: GravInvNet):
     """Run net on sample and return prediction."""
-    x, _, _, _ = make_transform(shape_cells, stats)(sample)        # (1,H,W)
+    x, _, _, _ = make_transform(shape_cells, stats)(sample) # (1,H,W)
     x = x.unsqueeze(0).to(device)                           # (1,1,H,W)
     net.eval()
     pred = net(x)[0]                                        # (Z,H,W)
@@ -36,7 +36,7 @@ def main():
     path = Path("data/overfit.h5")
     sample, rx, gz, shape, ind, true, mesh = inspect_truth(path, seed_index=0)
     # plot_topography(rx)
-    # plot_gravity_measurements(rx, gz)
+    plot_gravity_measurements(rx, gz)
     plot_density_contrast_3D_voxels(mesh, ind, true > 0.0)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     net = GravInvNet().to(device)
