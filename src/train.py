@@ -43,16 +43,14 @@ writer = SummaryWriter()
 def run_epoch(ld, train=True, ema_alpha=0.1):
     net.train() if train else net.eval()
     ema,tot,n=None,0.0,0
-    ctx = torch.autocast("cuda", dtype=torch.float16)
     with torch.enable_grad() if train else torch.no_grad():
         bar = tqdm(ld, leave=False, ncols=100)
         for gz,tgt in bar:
             gz,tgt=gz.to(dev, non_blocking=True),tgt.to(dev, non_blocking=True)
             if train:
                 opt.zero_grad(set_to_none=True)
-            with ctx: 
-                pred=net(gz)
-                loss = crit(pred, tgt
+            pred=net(gz)
+            loss = crit(pred, tgt
                             )
             if train:
                 scaler.scale(loss).backward() 
@@ -70,7 +68,7 @@ def run_epoch(ld, train=True, ema_alpha=0.1):
 
 # training loop
 E=2000; 
-min_loss = 1e-4
+min_loss = 1e-5
 pbar=tqdm(range(0, E),desc="training",ncols=100)
 for e in pbar:
     tr=run_epoch(ld=tr_ld, train=True)
