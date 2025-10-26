@@ -41,19 +41,22 @@ writer = SummaryWriter()
 
 # single epoch (forward --> backward pass)
 def run_epoch(ld, train=True, ema_alpha=0.1):
-    ema=None
-    tot,n=0.0,0
-    net.train()
+    net.train() if train else net.eval()
+    ema,tot,n=None,0.0,0
+    ctx = torch.autocast("cuda", dtype=torch.float16)
     with torch.enable_grad() if train else torch.no_grad():
         bar = tqdm(ld, leave=False, ncols=100)
         for gz,tgt in bar:
             gz,tgt=gz.to(dev, non_blocking=True),tgt.to(dev, non_blocking=True)
             if train:
-                opt.zero_grad(set_to_none=True) 
-            pred=net(gz)
-            loss = crit(pred, tgt)
+                opt.zero_grad(set_to_none=True)
+            with ctx: 
+                pred=net(gz)
+                loss = crit(pred, tgt
+                            )
             if train:
                 scaler.scale(loss).backward() 
+                scaler.unscale_(opt)
                 nn.utils.clip_grad_norm_(net.parameters(),1.0)
                 scaler.step(opt)
                 scaler.update()
@@ -67,21 +70,22 @@ def run_epoch(ld, train=True, ema_alpha=0.1):
 
 # training loop
 E=2000; 
-tr_hist=[None]*E; 
 min_loss = 1e-4
 pbar=tqdm(range(0, E),desc="training",ncols=100)
 for e in pbar:
-    tr=run_epoch(ld=tr_ld)
-    # tr_hist[e]=tr
+    tr=run_epoch(ld=tr_ld, train=True)
+    va=run_epoch(ld=va_ld, train=False)
     writer.add_scalar("Loss/train", tr, e)
+    writer.add_scalar("Loss/val",   va, e)
     writer.add_scalar("Hyperparams/LR", lr, e)
     writer.add_scalar("Hyperparams/WeightDecay", wd, e)
+    torch.save({'model': net.state_dict()}, 'training/checkpoints/best.pt')
     pbar.set_postfix(train=f"{tr:.4f}")
-    if tr < min_loss:
+    if va < min_loss:
         print(f"Reached target loss {tr:.6f} at epoch {e}")
-        torch.save({'model': net.state_dict()}, 'training/checkpoints/best.pt')
         break
 writer.flush()
+writer.close()
 
 # save model
 torch.save({"model": net.state_dict()}, "training/checkpoints/best.pt")
