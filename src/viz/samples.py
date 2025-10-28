@@ -1,9 +1,9 @@
 import numpy as np
 import os
-import pyvista as pv
-import matplotlib as mpl
 if os.environ.get("DISPLAY"):
     mpl.use("Qt5Agg") 
+import pyvista as pv
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 from simpeg import maps
 from simpeg.utils import plot2Ddata
