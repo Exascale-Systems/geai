@@ -1,6 +1,8 @@
+
 from src.gen.gen import *
 from src.io.hdf5_o import MasterWriter
-from tqdm import tqdm  
+from tqdm import tqdm
+from StructuralGeo.src.geogen.dataset import GeoData3DStreamingDataset  
 
 def generate_batch(
     out_path="data/test.h5",
@@ -11,6 +13,7 @@ def generate_batch(
     base_seed=0,
     accuracy = 0.5e-3, confidence = 0.95    # noise parameters
     ):
+
     # invariant across samples
     topo_xyz = create_topo(x_dom=x_dom, y_dom=y_dom)
     mesh = create_mesh(topo_xyz=topo_xyz, n_xy=n_xy, n_z=n_z, z_dom=z_dom)
@@ -27,26 +30,19 @@ def generate_batch(
         engine="choclo",
     )
     true_model = np.zeros(nC, dtype=float)
+    bounds = ((0, x_dom), (0, y_dom), (0, z_dom))
+    resolution = (n_xy, n_xy, n_z)
+    dataset = GeoData3DStreamingDataset(model_bounds=bounds, model_resolution=resolution)
     with MasterWriter(out_path, mesh.shape_cells, mesh.h[0], mesh.h[1], mesh.h[2]) as master:
         for k in tqdm(range(batch_size), desc="Generating samples", unit="sample", ncols=100):
             seed = base_seed + k
             true_model.fill(0.0)
-            true_model, _ = add_random_blocks(
-                mesh=mesh,
-                ind_active=ind_active,
-                model=true_model,
-                n_blocks=n_blocks,
-                size_frac_range=size_frac,
-                density_range=density_range,
-                seed=seed,
-                enforce_nonoverlap=True,
-            )
-            print(true_model.shape)
+            true_model = dataset.__getitem__(k)[0, ...].squeeze(0).numpy().ravel(order="F")
             y = sim.dpred(true_model)
             y += add_noise(y.shape, accuracy=accuracy, confidence=confidence, seed=seed)
             master.add(gz=y, receiver_locations=receiver_locations, true_model=true_model, ind_active=ind_active, seed=seed)
+
     return out_path
 
 if __name__ == "__main__":
     generate_batch()
-

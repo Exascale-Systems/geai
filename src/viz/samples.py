@@ -1,12 +1,13 @@
 import numpy as np
 import os
-if os.environ.get("DISPLAY"):
-    mpl.use("Qt5Agg") 
-import pyvista as pv
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from simpeg import maps
 from simpeg.utils import plot2Ddata
+if os.environ.get("DISPLAY"):
+    mpl.use("Qt5Agg") 
+import pyvista as pv
+
 
 def plot_topography(topo_xyz):
     """
@@ -75,7 +76,7 @@ def plot_density_contrast_3D(mesh, ind_active, density_values):
         cmap="plasma",
         show_edges=True,
         line_width=0.2,
-        clim=(0,1),
+        clim=(0,5),
         scalar_bar_args={
             "title": "",
             "vertical": True,        
