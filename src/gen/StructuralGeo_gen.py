@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib as mpl
+import matplotlib.pyplot as plt
 from scipy.interpolate import LinearNDInterpolator
 from scipy.stats import norm
 from discretize import TensorMesh
@@ -9,19 +10,18 @@ from simpeg.potential_fields import gravity
 from StructuralGeo.src.geogen.dataset import GeoData3DStreamingDataset  
 
 def create_topo(
-        dataset=None, k=0,
+        density,
         x_dom=1.6e3, y_dom=1.6e3, z_dom=0.8e3,   # domain size in x/y (m)
-        dx=50, dy=50, dz=50,           # grid spacing in x/y (m)   
+        dx=50, dy=50, dz=50,                     # grid spacing in x/y (m)   
     ):
     """Return (N,3) synthetic topography points."""
     xs = np.linspace(0, x_dom, int(round(x_dom/dx)))
     ys = np.linspace(0, y_dom, int(round(y_dom/dy)))
     zs = np.linspace(0, z_dom, int(round(z_dom/dz)))
     X, Y = np.meshgrid(xs, ys, indexing="xy")
-    density = dataset.__getitem__(k)[0, ...].squeeze(0).numpy()
     signs = np.sign(density)
-    signs = np.where(density >= 0, 1, -1)
-    switch_mask = np.diff(signs, axis=2) != 0  # (Nx, Ny, Nz-1)
+    # switch_mask = np.diff(signs, axis=2) != 0  # (Nx, Ny, Nz-1)
+    switch_mask = (density[:, :, :-1] > 0) & (density[:, :, 1:] <= 0)
     z_centers = 0.5 * (zs[:-1] + zs[1:])
     Z_switch = np.full((density.shape[0], density.shape[1]), np.nan)
     for i in range(density.shape[0]):
@@ -30,7 +30,10 @@ def create_topo(
             if len(idx) > 0:
                 Z_switch[i, j] = z_centers[idx[0]]
     mask = ~np.isnan(Z_switch)
-    topo_xyz = np.c_[X[mask], Y[mask], Z_switch[mask]]
+    topo_xyz = np.c_[Y[mask], X[mask], Z_switch[mask]]
+    if topo_xyz.size == 0:
+        X, Y = np.meshgrid(xs, ys, indexing="xy")
+        topo_xyz = np.c_[Y.ravel(), X.ravel(), np.full_like(X.ravel(), z_dom)]   
     return topo_xyz
 
 def create_mesh(
@@ -45,7 +48,7 @@ def create_mesh(
     hx = [(topo_xyz[-1,0] / n_xy, n_xy)]
     hy = [(topo_xyz[-1,1] / n_xy, n_xy)]
     hz = [(z_dom / n_z, n_z)]
-    return TensorMesh([hx, hy, hz], "00N")
+    return TensorMesh([hx, hy, hz], origin=(0,0,-z_dom))
 
 def init_model(mesh, topo_xyz, background_density=0.0):
     """
@@ -58,7 +61,7 @@ def init_model(mesh, topo_xyz, background_density=0.0):
     return ind_active, nC, model_map, true_model
 
 def get_sample(dataset, k):
-    return dataset.__getitem__(k)[0, ...].squeeze(0).numpy().ravel(order="F")
+    return dataset.__getitem__(k)[1, ...].squeeze(0).numpy()
 
 def gravity_survey(
     topo_xyz,
@@ -97,13 +100,14 @@ def add_noise(shape, accuracy, confidence=0.95, seed=0):
     return rng.normal(0.0, sigma, size=shape)
 
 def main():
-    bounds = ((0, 1.6e3), (0, 1.6e3), (0, 0.8e3))
+    bounds = ((0, 3.2e4), (0, 3.2e4), (0, 1.6e4))
     resolution = (32, 32, 16)
     dataset = GeoData3DStreamingDataset(model_bounds=bounds, model_resolution=resolution)
-    topo_xyz = create_topo(dataset, k=0)
+    density = get_sample(dataset, 0)
+    topo_xyz = create_topo(density)
     mesh = create_mesh(topo_xyz, n_xy=32, n_z=16, z_dom=800.0)
     ind_active, nC, model_map, true_model = init_model(mesh, topo_xyz)
-    true_model = get_sample(dataset, k=0)
+    true_model = density.ravel(order="F")
     receiver_locations, survey = gravity_survey(topo_xyz, n_per_axis=32, components=("gz",))
     sim = gravity.simulation.Simulation3DIntegral(
         survey=survey,
