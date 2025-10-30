@@ -557,6 +557,8 @@ dependencies = [
     { name = "pyvista" },
     { name = "scipy" },
     { name = "simpeg" },
+    { name = "tbb" },
+    { name = "tbb4py" },
     { name = "tensorboard" },
     { name = "torch" },
     { name = "tqdm" },
@@ -575,6 +577,8 @@ requires-dist = [
     { name = "pyvista", specifier = ">=0.46.3" },
     { name = "scipy", specifier = ">=1.16.2" },
     { name = "simpeg", specifier = ">=0.25.0" },
+    { name = "tbb", specifier = "==2022.3" },
+    { name = "tbb4py", specifier = "==2022.3.0" },
     { name = "tensorboard", specifier = ">=2.20.0" },
     { name = "torch", specifier = ">=2.9.0" },
     { name = "tqdm", specifier = ">=4.67.1" },
@@ -1768,6 +1772,47 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/83/d3/803453b36afefb7c2bb238361cd4ae6125a569b4db67cd9e79846ba2d68c/sympy-1.14.0.tar.gz", hash = "sha256:d3d3fe8df1e5a0b42f0e7bdf50541697dbe7d23746e894990c030e2b05e72517", size = 7793921 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a2/09/77d55d46fd61b4a135c444fc97158ef34a095e5681d0a6c10b75bf356191/sympy-1.14.0-py3-none-any.whl", hash = "sha256:e091cc3e99d2141a0ba2847328f5479b05d94a6635cb96148ccb3f34671bd8f5", size = 6299353 },
+]
+
+[[package]]
+name = "tbb"
+version = "2022.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "tcmlib" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e3/9e/b7f1f7af53580e4e8cf39cf51b14c8e295d767b3ae9d78b5007d6058cfc8/tbb-2022.3.0-py2.py3-none-manylinux_2_28_x86_64.whl", hash = "sha256:a7e122cb98a6f8823940341aa323dcdfffa77e36712a22a1ae3a76430fa9f412", size = 4178631 },
+    { url = "https://files.pythonhosted.org/packages/19/e7/8a3ae90c12186033dfd38a7292b2caef3ed10813162ab4713149191d70ef/tbb-2022.3.0-py3-none-win_amd64.whl", hash = "sha256:bb893f5772855ff2fd21867cb5c2806cb7d2960a178e660b342bc6a706a6ebf4", size = 422733 },
+]
+
+[[package]]
+name = "tbb4py"
+version = "2022.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "tbb" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ca/95/9177ffdc39c7668eda8453f3f88f130f2c1b61f274ebf77dd590c69c6396/tbb4py-2022.3.0-py310-none-manylinux_2_28_x86_64.whl", hash = "sha256:4636decbb2ce4dea65ac26a59dd9b473ae0f4d8ed56a42d732dbed2d939ea9f1", size = 370636 },
+    { url = "https://files.pythonhosted.org/packages/b6/2f/563dd202a4a3eac0a81afaf1da73a0b73fca21ded90cc6a829dbea10bf0d/tbb4py-2022.3.0-py310-none-win_amd64.whl", hash = "sha256:e1f46de1c2e862475ae2ec4a8ea0e2d92c82afa564e24aeccf4876a72c8cadb0", size = 53183 },
+    { url = "https://files.pythonhosted.org/packages/75/8d/44f82ab11cc6a888cef904d9b1fcdf2aaa6f3efce56acf3f29d99fce34f3/tbb4py-2022.3.0-py311-none-manylinux_2_28_x86_64.whl", hash = "sha256:1cdc094c7e1f0025efb1fc939998a8992b4d8b4e06f48e25490a8403275d88a2", size = 370647 },
+    { url = "https://files.pythonhosted.org/packages/73/90/4838949ccb8c149c9bb5aa59f9911aede4eac240274b67f49271e4ff63c3/tbb4py-2022.3.0-py311-none-win_amd64.whl", hash = "sha256:24d1182956383e95134f0518a355dde88ca62a54f8b5efc2e0fa8b4e23896d9c", size = 53226 },
+    { url = "https://files.pythonhosted.org/packages/1a/5b/c9f7c625ac883fa83d8fcca02f5087675c3aaf95201f52879ff4b84c1591/tbb4py-2022.3.0-py312-none-manylinux_2_28_x86_64.whl", hash = "sha256:2f9fc51e8a80b499f5cdcd8da7a3bc5c13fa4b5ed2d5a6a3dd6b9dd87ac9370a", size = 371342 },
+    { url = "https://files.pythonhosted.org/packages/58/e2/5a45cdcb7620966ecc8f664a5843461e2b87d8a0c2c679334ec0da32db3b/tbb4py-2022.3.0-py312-none-win_amd64.whl", hash = "sha256:2b312f85ce7d7da2139acafdb9cdb3ca7c7d9c5a9bcbe10a888ce0775ea07fd8", size = 46833 },
+    { url = "https://files.pythonhosted.org/packages/13/f1/debc1a9e40aff592c1c20cbd7a36d915c8034501546febf44493a5f178e1/tbb4py-2022.3.0-py313-none-manylinux_2_28_x86_64.whl", hash = "sha256:3bf14e4bc0e57f6eb8fc84f7bfca574130e7dbb1d8fa4a8ed0344a089c489018", size = 211220 },
+    { url = "https://files.pythonhosted.org/packages/b9/aa/026c8ee614ea313e6f7d5b90179ed7f93fed4dc35911fea01a84095b2677/tbb4py-2022.3.0-py313-none-win_amd64.whl", hash = "sha256:bfb9ce9dc15c447fd2ec43ad4a2e770a628c4c742d68d04f590c5846ca838416", size = 46844 },
+    { url = "https://files.pythonhosted.org/packages/90/2d/1a385462a1d2072fcc40e41a3b8faba8d5e2bb6efe9d513102e102bca910/tbb4py-2022.3.0-py39-none-manylinux_2_28_x86_64.whl", hash = "sha256:eff0584d36d4a5b15cd8905cb7423c1807c8db0c66e21ca79171954304b35022", size = 370668 },
+    { url = "https://files.pythonhosted.org/packages/a4/94/8f6fbed33ba0158cf488f66111e1b296974ed7b380694207aa3882f16a71/tbb4py-2022.3.0-py39-none-win_amd64.whl", hash = "sha256:4fdecb10871f7eb724a3e7ea1af273df123b401c8c7f6085738181dd64f88ca8", size = 53145 },
+]
+
+[[package]]
+name = "tcmlib"
+version = "1.4.1"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a1/a4/38e8b5a27b66ab286168ba6c449771ed71d71ec76524e7f12401474a5151/tcmlib-1.4.1-py2.py3-none-manylinux_2_28_x86_64.whl", hash = "sha256:0d5bd98db48d31bec7fedba5c23599bf9ae43c7016d4c3946d25242d320cee89", size = 2731276 },
+    { url = "https://files.pythonhosted.org/packages/eb/4d/2b1d55dba475f602197e284b9a5e5460139a9c5ef2bfb63c8d2a1fafc163/tcmlib-1.4.1-py2.py3-none-win_amd64.whl", hash = "sha256:5202a1fd8541182fbd4ef72848784e4bf94340152d7ddff33d401d30930fa53c", size = 370347 },
 ]
 
 [[package]]
