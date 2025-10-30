@@ -8,10 +8,6 @@ src/viz/__pycache__
 data/*
 training/checkpoints/best.pt
 weights/*
+checkpoints/*
+datasets/*
 
-
-checkpoints/best.pt
-.gitignore
-datasets/singleblock.h5
-.gitignore
-datasets/overfit.h5

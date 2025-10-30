@@ -8,13 +8,13 @@ from simpeg.potential_fields import gravity
 
 def create_topo(
         x_dom=1.6e3, y_dom=1.6e3,   # domain size in x/y (m)
-        dx=50, dy=50,           # grid spacing in x/y (m)   
-        fbm_amp=0.0,            # amplitude of topography (set to 0 for flat)
-        seed=0,                 # random seed
-        noise_sigma=0.0,        # stddev of Gaussian noise added to topography (m)
-        cycles1=(1.0, 1.0),     # number of long-wavelength cycles in x/y
-        cycles2=(3.0, 2.0),     # number of finer cycles in x/y
-        phase=0.0,              # phase offset
+        dx=50, dy=50,               # grid spacing in x/y (m)   
+        fbm_amp=0.0,                # amplitude of topography (set to 0 for flat)
+        seed=0,                     # random seed
+        noise_sigma=0.0,            # stddev of Gaussian noise added to topography (m)
+        cycles1=(1.0, 1.0),         # number of long-wavelength cycles in x/y
+        cycles2=(3.0, 2.0),         # number of finer cycles in x/y
+        phase=0.0,                  # phase offset
     ):
     """Return (N,3) synthetic topography points."""
     rng = np.random.default_rng(seed)
