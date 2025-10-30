@@ -10,3 +10,8 @@ training/checkpoints/best.pt
 weights/*
 
 
+checkpoints/best.pt
+.gitignore
+datasets/singleblock.h5
+.gitignore
+datasets/overfit.h5
