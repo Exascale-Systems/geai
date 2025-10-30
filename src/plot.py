@@ -8,7 +8,6 @@ if os.environ.get("DISPLAY"):
     mpl.use("Qt5Agg") 
 import pyvista as pv
 
-
 def plot_topography(topo_xyz):
     """
     Create a 3D scatter plot of topography points.

@@ -157,13 +157,13 @@ def main():
     y = sim.dpred(true_model)
     y += add_noise(y.shape, accuracy=0.05, confidence=0.95, seed=0)
     try:
-        from src.viz.samples import (
+        from src.plot import (
             plot_topography,
-            plot_density_contrast_3D_voxels,
+            plot_density_contrast_3D,
             plot_gravity_measurements,
         )
         plot_topography(topo_xyz)
-        plot_density_contrast_3D_voxels(mesh, ind_active, blocks_mask)
+        plot_density_contrast_3D(mesh, ind_active, blocks_mask)
         plot_gravity_measurements(receiver_locations, y)
     except Exception as e:
         print("[plot skipped]", e)

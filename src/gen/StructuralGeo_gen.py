@@ -104,7 +104,7 @@ def main():
     y = sim.dpred(model)
     y += add_noise(y.shape, accuracy=0.05, confidence=0.95, seed=0)
     try:
-        from src.viz.samples import (
+        from src.plot import (
             plot_topography,
             plot_density_contrast_3D,
             plot_gravity_measurements,

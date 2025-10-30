@@ -1,6 +1,6 @@
 import numpy as np, torch
 from pathlib import Path
-from src.viz.samples import plot_topography, plot_gravity_measurements, plot_density_contrast_3D
+from src.plot import plot_topography, plot_gravity_measurements, plot_density_contrast_3D
 from src.gen.gen import create_mesh
 from src.io.hdf5_i import MasterReader
 from src.load import MasterDataset
@@ -33,27 +33,27 @@ def inspect_prediction(sample: dict, shape_cells, stats,device, net: GravInvNet)
     return pred_full.reshape(-1)                            # (nx*ny*nz,)
 
 def main():
-    data = np.load("training/split/idx_init.npz")
-    va_indices = data["va"]
-    tr_indices = data["tr"]
-    path = Path("data/singleblock.h5")
-    sample, rx, gz, shape, ind, true, mesh = inspect_truth(path, seed_index=va_indices[201])
+    # data = np.load("training/split/idx_init.npz")
+    # va_indices = data["va"]
+    # tr_indices = data["tr"]
+    path = Path("datasets/test.h5")
+    sample, rx, gz, shape, ind, true, mesh = inspect_truth(path, seed_index=0)
     # plot_topography(rx)
     plot_gravity_measurements(rx, gz)
     plot_density_contrast_3D(mesh, ind, true)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    net = GravInvNet().to(device)
-    ckpt_path = Path("weights/singleblock.pt")
-    if ckpt_path.exists():
-        state = torch.load(ckpt_path, map_location=device)
-        net.load_state_dict(state["model"] if "model" in state else state)
-        print(f"Loaded trained model from {ckpt_path}")
-    else:
-        print("Using untrained model.")
-    stats = compute_stats(str(path))
-    pred = inspect_prediction(sample, shape, stats, device, net)
-    pred = denorm(pred, stats)           # physical units (e.g., g/cc)
-    plot_density_contrast_3D(mesh, ind, pred)
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # net = GravInvNet().to(device)
+    # ckpt_path = Path("weights/singleblock.pt")
+    # if ckpt_path.exists():
+    #     state = torch.load(ckpt_path, map_location=device)
+    #     net.load_state_dict(state["model"] if "model" in state else state)
+    #     print(f"Loaded trained model from {ckpt_path}")
+    # else:
+    #     print("Using untrained model.")
+    # stats = compute_stats(str(path))
+    # pred = inspect_prediction(sample, shape, stats, device, net)
+    # pred = denorm(pred, stats)           # physical units (e.g., g/cc)
+    # plot_density_contrast_3D(mesh, ind, pred)
 
 if __name__ == "__main__":
     main()
