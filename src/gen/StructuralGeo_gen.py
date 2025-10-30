@@ -32,10 +32,10 @@ def create_topo(
             if len(idx) > 0:
                 Z_switch[i, j] = z_centers[idx[0]]
     mask = ~np.isnan(Z_switch)
-    topo_xyz = np.c_[Y[mask], X[mask], Z_switch[mask]]
+    topo_xyz = np.c_[X[mask], Y[mask], Z_switch[mask]]
     if topo_xyz.size == 0:
         X, Y = np.meshgrid(xs, ys, indexing="xy")
-        topo_xyz = np.c_[Y.ravel(), X.ravel(), np.full_like(X.ravel(), z_dom)]   
+        topo_xyz = np.c_[X.ravel(), Y.ravel(), np.full_like(X.ravel(), z_dom)]   
     return topo_xyz
 
 def create_mesh(
@@ -62,23 +62,12 @@ def init_model(mesh, topo_xyz, background_density=0.0):
 
 def gravity_survey(
     topo_xyz,
-    n_per_axis=32,             # number of receivers per axis (x/y), should match tensor discretization
     components=("gz",),        # gravity components to measure
     ):
     """
     Build receiver grid at topography surface; returns (receiver_locations, survey).
     """
-    rx_xy = np.array(np.meshgrid(
-    np.linspace(topo_xyz[-1,0], topo_xyz[0,0], n_per_axis),
-    np.linspace(topo_xyz[-1,1], topo_xyz[0,1], n_per_axis),
-    indexing="xy"
-    )).reshape(2, -1).T
-    fun = LinearNDInterpolator(topo_xyz[:, :2], topo_xyz[:, 2], fill_value=np.nan)
-    z = fun(rx_xy)
-    if np.isnan(z).any():
-        msg = (f"{np.isnan(z).sum()} receivers outside convex hull; values set to NaN.")
-        raise ValueError(msg)
-    receiver_locations = np.c_[rx_xy, z]
+    receiver_locations = topo_xyz
     rx = gravity.receivers.Point(receiver_locations, components=list(components))
     src = gravity.sources.SourceField(receiver_list=[rx])
     survey = gravity.survey.Survey(src)
@@ -104,7 +93,7 @@ def main():
     topo_xyz = create_topo(model)
     ind_active, nC, model_map, _ = init_model(mesh, topo_xyz)
     model = model.ravel(order="F")
-    receiver_locations, survey = gravity_survey(topo_xyz, n_per_axis=32, components=("gz",))
+    receiver_locations, survey = gravity_survey(topo_xyz, components=("gz",))
     sim = gravity.simulation.Simulation3DIntegral(
         survey=survey,
         mesh=mesh,
