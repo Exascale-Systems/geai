@@ -1,52 +1,16 @@
 import numpy as np
 import os
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-from simpeg import maps
-from simpeg.utils import plot2Ddata
-if os.environ.get("DISPLAY"):
-    mpl.use("Qt5Agg") 
 import pyvista as pv
 
 def plot_topography(topo_xyz):
     """
     Create a 3D scatter plot of topography points.
-    """ 
-    fig = plt.figure(figsize=(7, 5))
-    ax = fig.add_subplot(111, projection='3d')
-    ax.scatter(topo_xyz[:,0], topo_xyz[:,1], topo_xyz[:,2], 
-           c=topo_xyz[:,2], cmap='terrain', s=5)
-    ax.set_xlabel('X')
-    ax.set_ylabel('Y')
-    ax.set_zlabel('Z')
-    plt.show()
-    
-def plot_density_contrast_2D(mesh, ind_active, true_model):
     """
-    Plot a 2D density contrast model slice with colorbar.
-    """
-    fig = plt.figure(figsize=(7, 5))
-    plotting_map = maps.InjectActiveCells(mesh, ind_active, np.nan)
-    ax1 = fig.add_axes([0.1, 0.12, 0.73, 0.78])
-    mesh.plot_slice(
-        plotting_map * true_model,
-        normal="Y",
-        ax=ax1,
-        ind=int(mesh.shape_cells[1] / 2), 
-        grid=True,
-        clim=(np.min(true_model), np.max(true_model)),
-        pcolor_opts={"cmap": "viridis"},
-    )
-    ax1.set_title("Model slice at y = 0 m")
-    ax1.set_xlabel("x (m)")
-    ax1.set_ylabel("z (m)")
-    ax2 = fig.add_axes([0.85, 0.12, 0.05, 0.78])
-    norm = mpl.colors.Normalize(vmin=np.min(true_model), vmax=np.max(true_model))
-    cbar = mpl.colorbar.ColorbarBase(
-        ax2, norm=norm, orientation="vertical", cmap=mpl.cm.viridis
-    )
-    cbar.set_label("$g/cm^3$", rotation=270, labelpad=15, size=12)
-    plt.show()
+    pts = pv.PolyData(topo_xyz)
+    p = pv.Plotter()
+    p.add_points(pts, render_points_as_spheres=True, point_size=8)
+    p.show_bounds(grid='front', xtitle='X', ytitle='Y', ztitle='Z')
+    p.show()
 
 def plot_density_contrast_3D(mesh, ind_active, density_values):
     """
@@ -98,44 +62,40 @@ def plot_density_contrast_3D(mesh, ind_active, density_values):
     p.camera.azimuth += 270
     p.show()
 
-
 def plot_gravity_measurements(receiver_locations, dpred, title="Gravity Anomaly (Z-component)",
-                         units="$mgal$", show_points=True, cmap="bwr", ncontour=30):
+                              units="$mgal$", show_points=True, cmap="bwr", ncontour=30):
     """
     Plot a 2D gravity anomaly map with survey stations.
     """
-    fig = plt.figure(figsize=(7, 5))
-    v_max = np.max(np.abs(dpred))
-    ax1 = fig.add_axes([0.1, 0.1, 0.75, 0.85])
-    plot2Ddata(
-        receiver_locations,
-        dpred,
-        clim=(-v_max, v_max),
-        ax=ax1,
-        ncontour=ncontour,
-        contourOpts={"cmap": cmap},
+    xy = receiver_locations[:, :2]
+    pts2d = np.c_[xy, np.zeros(len(xy))]
+    v_max = float(np.max(np.abs(dpred)))
+    cloud = pv.PolyData(pts2d)
+    surf = cloud.delaunay_2d()
+    surf["dpred"] = np.asarray(dpred).ravel()
+    p = pv.Plotter()
+    p.add_mesh(
+        surf, scalars="dpred", cmap=cmap, clim=(-v_max, v_max),
+        scalar_bar_args={
+            "title": "",
+            "vertical": True,        
+            "position_x": 0.90,      
+            "position_y": 0.15,      
+            "width": 0.04,          
+            "height": 0.7,           
+            "label_font_size": 16,
+        }
     )
-    ax1.set_title(title)
-    ax1.set_xlabel("x (m)")
-    ax1.set_ylabel("y (m)")
+    if ncontour and ncontour > 0:
+        p.add_mesh(surf.contour(ncontour, scalars="dpred"), line_width=1, show_scalar_bar=False)
     if show_points:
-        xy = receiver_locations[:, :2]
-        ax1.scatter(
-            xy[:, 0], xy[:, 1],
-            s=18, marker='o', c='k',
-            edgecolors='w', linewidths=0.4,
-            zorder=3, label='Stations'
-        )
-        ax1.legend(loc='upper right', frameon=True)
-        ax1.set_aspect('equal', adjustable='box')
-    ax2 = fig.add_axes([0.82, 0.1, 0.03, 0.85])
-    norm = mpl.colors.Normalize(vmin=-v_max, vmax=v_max)
-    cbar = mpl.colorbar.ColorbarBase(
-        ax2, norm=norm, orientation="vertical", cmap=getattr(mpl.cm, cmap), format="%.1e"
-    )
-    if units:
-        cbar.set_label(units, rotation=270, labelpad=15, size=12)
-    plt.show()
+        p.add_points(cloud, color="black", point_size=6, render_points_as_spheres=True)
+    p.add_text(title, position="upper_edge", font_size=12)
+    p.show_bounds(grid="front", xtitle="x (m)", ytitle="y (m)", ztitle="z (m)")
+    p.enable_parallel_projection()
+    p.view_xy()
+    p.show()
+
 
 
 

@@ -19,8 +19,6 @@ def inspect_truth(h5_path: Path, seed_index: int = 0):
     ind = s["ind_active"].astype(bool)                 
     true = np.zeros_like(ind, float)
     true[ind] = s["true_model"]
-    # z_dom = nz * ds.hz[0]
-    # mesh = create_mesh(np.flip(rx, 0), n_xy=nx, n_z=nz, z_dom=z_dom)
     mesh = create_mesh(bounds=((0, nx*ds.hx[0]), (0, ny*ds.hy[0]), (0, nz*ds.hz[0])), resolution=(nx, ny, nz))
     return s, rx, gz, (nx, ny, nz), ind, true, mesh
 

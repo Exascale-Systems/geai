@@ -71,6 +71,13 @@ Trying to replicate *Deep Learning for 3-D Inversion of Gravity Data* by *Zhang 
 - 22 000 samples
 - 1g/cm^3 density contrast
 
+## To-do
+- refactor gen/*
+- refactor plot.py
+- understand "gz" measurement for StructuralGeo data
+- set markov matrix for StructuralGeo
+- set density mask for StructuralGeo
+
 
 
 
