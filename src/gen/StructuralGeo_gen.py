@@ -15,13 +15,12 @@ def get_sample(dataset, k):
 
 def create_topo(
         density,                                 # density array (N,3)   
-        x_dom=1.6e3, y_dom=1.6e3, z_dom=0.8e3,   # domain size in x/y (m)
-        dx=50, dy=50, dz=50,                     # grid spacing in x/y (m)   
+        x_dom=1.6e3, y_dom=1.6e3, z_dom=0.8e3   # domain size in x/y (m)
     ):
     """Return (N,3) synthetic topography points from StructuralGeo synthetic model."""
-    xs = np.linspace(0, x_dom, int(round(x_dom/dx)))
-    ys = np.linspace(0, y_dom, int(round(y_dom/dy)))
-    zs = np.linspace(0, z_dom, int(round(z_dom/dz)+1))
+    xs = np.linspace(0, x_dom, int(round(x_dom/density.shape[0])))
+    ys = np.linspace(0, y_dom, int(round(y_dom/density.shape[1])))
+    zs = np.linspace(0, z_dom, int(round(z_dom/density.shape[2])+1))
     X, Y = np.meshgrid(xs, ys, indexing="xy")
     switch_mask = (density[:, :, :-1] > 0) & (density[:, :, 1:] <= 0)
     z_centers = 0.5 * (zs[:-1] + zs[1:])
@@ -36,7 +35,7 @@ def create_topo(
     if topo_xyz.size == 0:
         X, Y = np.meshgrid(xs, ys, indexing="xy")
         topo_xyz = np.c_[X.ravel(), Y.ravel(), np.full_like(X.ravel(), z_dom)]   
-    return topo_xyz
+    return np.flip(topo_xyz, 0)
 
 def create_mesh(
         bounds = ((0, 3.2e4), (0, 3.2e4), (0, 1.6e4)),
@@ -90,7 +89,7 @@ def main():
     dataset = GeoData3DStreamingDataset(model_bounds=bounds, model_resolution=resolution)
     model = get_sample(dataset, 0)
     mesh = create_mesh(bounds, resolution)
-    topo_xyz = create_topo(model)
+    topo_xyz = create_topo(model, x_dom=bounds[0][1], y_dom=bounds[1][1], z_dom=bounds[2][1])
     ind_active, nC, model_map, _ = init_model(mesh, topo_xyz)
     model = model.ravel(order="F")
     receiver_locations, survey = gravity_survey(topo_xyz, components=("gz",))
