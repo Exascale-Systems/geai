@@ -1,39 +1,25 @@
 ## Objective
 
-Resolve geologic density contrast map based on gravity measurements at surface. There are two technques for solving this ill-posed inverse problem.
+There are two technques for resolving subsurface density maps based on gravity measurements at surface. While solving for gravity from a density map is trivial, the inverse is an ill-posed problem without a unique solution.
 
-## Traditional 
+## Inversion
 
-Density contrast (mesh, values, topography, survey locations) → Get true gravity → Add noise to simulate realistic gravity measurements → Solve for density contrast using SIMPEG (L2 or IRLS inverse solvers)
+Using Bayesian analysis techniques like [SIMPEGs inversion solvers](https://docs.simpeg.xyz/latest/content/user-guide/tutorials/03-gravity/index.html) one can resolve density contrasts based on gravity measurements. 
+
+To test these solvers: Generate synthetic density contrast → Solve for gravity → Add noise to simulate realistic measurements → Solve for density contrast using SIMPEG (L2 or IRLS inverse solvers). 
 
 [bayesian.ipynb](archive/bayesian.ipynb)
 
-Unfortunately this has many shortcomings and is computationally inneficient.
+Unfortunately this method is unsuitable for non-linear / sparse problems amongst many shortcomings and is computationally inneficient.
 
 ## Deep Learning
 
-A neural net may be a better and more computationally efficient solution... Although to generate this neural net (to solve for density contrast), requires training with synthetic data:
+A forward pass through a neural net may be more suitable at resolving non-linear / sparse features along with being more computationally efficient. However, to generate a neural net of this kind, one has to train the wieghts on synthetic data as there is limited subsurface density contrast maps.
 
-Density contrast (mesh, values, topography, survey locations) → Get true gravity → Add noise to simulate realistic gravity measurements → Train neural net:
+Generate synthetic density contrast → Solve for gravity → Add noise to simulate realistic measurements → Train neural net
 
 - density contrast (y)
 - gravity measurement (x)
-
-### Dataset 
-
-- 20 000 samples
-- 3:1:1 training, test, validation
-- 0-1g/cm^3
-- 32 x 32 x 16 (50m)
-- 1 block?
-- topography?
-- noise?
-
-### Training (UNET 2D --> 3D)
-
-Trying to replicate *Deep Learning for 3-D Inversion of Gravity Data* by *Zhang et al.*
-
-<img src="documentation/zhang.png" alt="alt text" width="800" />
 
 ## Notes On Previous Work
 
@@ -71,13 +57,52 @@ Trying to replicate *Deep Learning for 3-D Inversion of Gravity Data* by *Zhang 
 - 22 000 samples
 - 1g/cm^3 density contrast
 
+## Architecture (UNET 2D --> 3D)
+
+Trying to replicate *Deep Learning for 3-D Inversion of Gravity Data* by *Zhang et al.*
+
+<img src="documentation/zhang.png" alt="alt text" width="800" />
+
+## Dataset 1 [[single_block.h5](datasets/single_block.h5)]
+
+- 20 000 samples
+- 4:1 training, validation [[single_block.npz](splits/single_block.npz)]
+- 0-1 g/cm^3
+- 32 x 32 x 16 (50m voxels)
+- Randomly generate 1 block 0-30% of domain size within voxel grid
+- flat topography
+- noise: 0.05e-3 mGal, w/ 95% confidence
+- Results: [[single_block](runs/single_block)]
+    - $tensorboard --logdir=runs --bind_all
+
+## Dataset 2
+
+The following paper describes a method for generating much more plausible/realistic synthetic geology.
+
+[Synthetic Geology -- Structural Geology Meets Deep Learning](https://arxiv.org/abs/2506.11164)
+
+The generation of this dataset [] relies on a [forked version](https://github.com/kostubhagarwal/StructuralGeo) of the repo described in this paper.
+
 ## To-do
 - refactor gen/*
-- refactor plot.py
-- understand "gz" measurement for StructuralGeo data
+- refactor plot
 - set markov matrix for StructuralGeo
 - set density mask for StructuralGeo
+- README.md
 
+## Open Questions
+### Geology
+- find deposits vs determine geology?
+- what kinds of deposits?
+- domain size? 
+- edge effects?
+
+### Deep Learning
+- multi-sensor fusion?
+- pre-train data analysis?
+- what should i track during training?
+- alternative architectures?
+- epoches, batches, etc?
 
 
 

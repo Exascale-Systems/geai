@@ -18,9 +18,9 @@ def create_topo(
         x_dom=1.6e3, y_dom=1.6e3, z_dom=0.8e3   # domain size in x/y (m)
     ):
     """Return (N,3) synthetic topography points from StructuralGeo synthetic model."""
-    xs = np.linspace(0, x_dom, int(round(x_dom/density.shape[0])))
-    ys = np.linspace(0, y_dom, int(round(y_dom/density.shape[1])))
-    zs = np.linspace(0, z_dom, int(round(z_dom/density.shape[2])+1))
+    xs = np.linspace(0, x_dom, int(round(density.shape[0])))
+    ys = np.linspace(0, y_dom, int(round(density.shape[1])))
+    zs = np.linspace(0, z_dom, int(round(density.shape[2])+1))
     X, Y = np.meshgrid(xs, ys, indexing="xy")
     switch_mask = (density[:, :, :-1] > 0) & (density[:, :, 1:] <= 0)
     z_centers = 0.5 * (zs[:-1] + zs[1:])
@@ -102,6 +102,9 @@ def main():
     )
     y = sim.dpred(model)
     y += add_noise(y.shape, accuracy=0.05, confidence=0.95, seed=0)
+    import matplotlib.pyplot as plt
+    plt.hist(y, bins=100, density=False, alpha=0.7)
+    plt.show()
     try:
         from src.plot import (
             plot_topography,

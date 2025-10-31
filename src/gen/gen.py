@@ -156,6 +156,9 @@ def main():
     )
     y = sim.dpred(true_model)
     y += add_noise(y.shape, accuracy=0.05, confidence=0.95, seed=0)
+    import matplotlib.pyplot as plt
+    plt.hist(y, bins=50, density=False, alpha=0.7)
+    plt.show()
     try:
         from src.plot import (
             plot_topography,
