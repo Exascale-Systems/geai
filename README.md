@@ -81,7 +81,7 @@ The following paper describes a method for generating much more plausible/realis
 
 [Synthetic Geology -- Structural Geology Meets Deep Learning](https://arxiv.org/abs/2506.11164)
 
-The generation of this dataset [] relies on a [forked version](https://github.com/kostubhagarwal/StructuralGeo) of the repo described in this paper.
+The generation of this dataset relies on a [forked version](https://github.com/kostubhagarwal/StructuralGeo) of the repo described in this paper.
 
 ## To-do
 - refactor gen/*
