@@ -77,11 +77,11 @@ Trying to replicate *Deep Learning for 3-D Inversion of Gravity Data* by *Zhang 
 
 ## Dataset 2
 
-The following paper describes a method for generating much more plausible/realistic synthetic geology.
+The following paper describes a method for generating much more plausible/realistic synthetic geology. More specifically, applying matrix transformations to reflect realisitc geological timelines to an inital deposition of material. The variance in this dataset is a function of Markov sampling of the following [Markov Matrix](StructuralGeo/src/geogen/generation/markov_matrix/default_markov_matrix.csv).
 
 [Synthetic Geology -- Structural Geology Meets Deep Learning](https://arxiv.org/abs/2506.11164)
 
-The generation of this dataset relies on a [forked version](https://github.com/kostubhagarwal/StructuralGeo) of the repo described in this paper.
+The generation of this dataset relies on a [forked version](https://github.com/kostubhagarwal/StructuralGeo) of the repo described in this paper. This fork adds a channel of information (in this case density) to 'Rock Category Mapping' as defined in StructuralGeo via a [lookup table](StructuralGeo/src/geogen/dataset/add_channel.py).
 
 ## To-do
 - refactor gen/*
