@@ -6,7 +6,7 @@ from src.io.hdf5_i import MasterReader
 from src.load import MasterDataset
 from src.transform import make_transform
 from src.nn import GravInvNet
-from src.normalize import compute_stats, denorm
+from src.transform import *
 
 def inspect_truth(h5_path: Path, seed_index: int = 0):
     """Read one sample and return stuff."""
@@ -33,18 +33,18 @@ def inspect_prediction(sample: dict, shape_cells, stats,device, net: GravInvNet)
     return pred_full.reshape(-1)                            # (nx*ny*nz,)
 
 def main():
-    data = np.load("splits/idx_test.npz")
+    data = np.load("splits/single_block.npz")
     va_indices = data["va"]
     tr_indices = data["tr"]
-    path = Path("datasets/test.h5")
-    sample, rx, gz, shape, ind, true, mesh = inspect_truth(path, seed_index=tr_indices[0])
-    # plot_topography(rx)
-    # plot_gravity_measurements(rx, gz)
-    # plot_density_contrast_3D(mesh, ind, true)
+    path = Path("datasets/single_block.h5")
+    sample, rx, gz, shape, ind, true, mesh = inspect_truth(path, seed_index=tr_indices[3])
+    plot_topography(rx)
+    plot_gravity_measurements(rx, gz)
+    plot_density_contrast_3D(mesh, ind, true)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # device = torch.device("cpu")
     net = GravInvNet().to(device)
-    ckpt_path = Path("checkpoints/best.pt")
+    ckpt_path = Path("weights/single_block.pt")
     if ckpt_path.exists():
         state = torch.load(ckpt_path, map_location=device)
         net.load_state_dict(state["model"] if "model" in state else state)

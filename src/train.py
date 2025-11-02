@@ -23,6 +23,7 @@ va_ld = DataLoader(va_ds,batch_size=bs,shuffle=False,num_workers=2,worker_init_f
 
 # device, model, optimzer, hyperparams, loss, mixed precision, tensorboard
 dev = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+print(dev)
 net = GravInvNet().to(dev)
 lr=1e-3
 wd=0.0
@@ -62,15 +63,18 @@ def run_epoch(ld, train=True, ema_alpha=0.1):
 E=2000; 
 min_loss = 1e-5
 pbar=tqdm(range(0, E),desc="training",ncols=100)
+best = float("inf")
 for e in pbar:
     tr=run_epoch(ld=tr_ld, train=True)
     va=run_epoch(ld=va_ld, train=False)
+    pbar.set_postfix(train=f"{tr:.4f}", validation=f"{va:.4f}")
     writer.add_scalar("Loss/train", tr, e)
     writer.add_scalar("Loss/val",   va, e)
     writer.add_scalar("Hyperparams/LR", lr, e)
     writer.add_scalar("Hyperparams/WeightDecay", wd, e)
-    torch.save({'model': net.state_dict()}, 'checkpoints/best.pt')
-    pbar.set_postfix(train=f"{tr:.4f}", validation=f"{va:.4f}")
+    if va < best:
+        best = va
+        torch.save({'model': net.state_dict()}, 'checkpoints/best.pt')
     if va < min_loss:
         print(f"Reached target loss {va:.6f} at epoch {e}")
         break

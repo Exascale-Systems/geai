@@ -39,7 +39,7 @@ def plot_density_contrast_3D(mesh, ind_active, density_values):
         cmap="plasma",
         show_edges=True,
         line_width=0.2,
-        clim=(0,13),
+        clim=(0,4),
         scalar_bar_args={
             "title": "",
             "vertical": True,        

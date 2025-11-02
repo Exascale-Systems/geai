@@ -5,8 +5,8 @@ from tqdm import tqdm
 from StructuralGeo.src.geogen.dataset import GeoData3DStreamingDataset  
 
 def generate_batch(
-    out_path="datasets/test.h5",                    # add path before generating!
-    ds_size=10,                                     # number of samples to generate 
+    out_path="datasets/sg.h5",                    # add path before generating!
+    ds_size=20000,                                     # number of samples to generate 
     bounds = ((0, 3.2e4), (0, 3.2e4), (0, 1.6e4)),  # domain bounds (m)
     resolution = (32, 32, 16),                      # domain discretization (m)
     seed = 0

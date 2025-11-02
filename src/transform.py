@@ -16,12 +16,13 @@ def compute_stats(h5_path):
     return dict(gz_min=gz_min, gz_max=gz_max, rho_min=rho_min, rho_max=rho_max)
 
 def norm(a, a0, a1): 
+    a = torch.as_tensor(a)
     a0 = torch.as_tensor(a0, dtype=a.dtype, device=a.device)
     a1 = torch.as_tensor(a1, dtype=a.dtype, device=a.device)
     return 2*(a - a0)/(a1 - a0) - 1
 
 def denorm(y_norm, stats):
-    y = torch.clamp(y_norm, -1.0, 1.0)
+    y = torch.clamp(torch.as_tensor(y_norm), -1.0, 1.0)
     a = torch.as_tensor(stats["rho_min"], dtype=y.dtype, device=y.device)
     b = torch.as_tensor(stats["rho_max"], dtype=y.dtype, device=y.device)
     return ((y + 1.0) * 0.5) * (b - a) + a
@@ -45,7 +46,7 @@ def make_transform(shape_cells, stats):
         b = h.to(dtype=torch.float32, device=dev).view(1, ny, nx)                     
         x = torch.cat([a, b], dim=0)
         y = tm.to(dtype=torch.float32, device=dev).reshape(nx, ny, nz).permute(2, 1, 0).contiguous()
-        m = sample["ind_active"].to(device=dev).reshape(nx, ny, nz).permute(2, 1, 0).contiguous().to(torch.bool)
+        m = torch.as_tensor(sample["ind_active"]).to(device=dev).reshape(nx, ny, nz).permute(2, 1, 0).contiguous().to(torch.bool)
         return x, y, m, sample["seed"]
 
     return to_tensors   

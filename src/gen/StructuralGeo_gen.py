@@ -30,11 +30,8 @@ def create_topo(
             idx = np.where(switch_mask[i, j, :])[0]
             if len(idx) > 0:
                 Z_switch[i, j] = z_centers[idx[0]]
-    mask = ~np.isnan(Z_switch)
-    topo_xyz = np.c_[X[mask], Y[mask], Z_switch[mask]]
-    if topo_xyz.size == 0:
-        X, Y = np.meshgrid(xs, ys, indexing="xy")
-        topo_xyz = np.c_[X.ravel(), Y.ravel(), np.full_like(X.ravel(), z_dom)]   
+    Z_switch = np.where(np.isnan(Z_switch), 0.0, Z_switch)
+    topo_xyz = np.c_[X.ravel(), Y.ravel(), Z_switch.ravel()]   
     return np.flip(topo_xyz, 0)
 
 def create_mesh(
@@ -87,7 +84,7 @@ def main():
     bounds = ((0, 3.2e4), (0, 3.2e4), (0, 1.6e4))
     resolution = (32, 32, 16)
     dataset = GeoData3DStreamingDataset(model_bounds=bounds, model_resolution=resolution)
-    model = get_sample(dataset, 0)
+    model = get_sample(dataset, 6)
     mesh = create_mesh(bounds, resolution)
     topo_xyz = create_topo(model, x_dom=bounds[0][1], y_dom=bounds[1][1], z_dom=bounds[2][1])
     ind_active, nC, model_map, _ = init_model(mesh, topo_xyz)
