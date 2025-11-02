@@ -2,16 +2,18 @@ import h5py, numpy as np, torch
 from torch.utils.data import Dataset, get_worker_info, Subset
 
 class MasterDataset(Dataset):
-    def __init__(self, master_path, transform=None):
+    def __init__(self, master_path, transform=None, device="cpu"):
         self.master_path = str(master_path)
         with h5py.File(self.master_path, "r") as f:
             self.seeds = sorted(map(int, f["samples"].keys()))
             g = f["globals"]
-            self.shape_cells = tuple(np.array(g["shape_cells"], dtype=np.int32))
-            self.hx = np.array(g["hx"], dtype=np.float32)
-            self.hy = np.array(g["hy"], dtype=np.float32)
-            self.hz = np.array(g["hz"], dtype=np.float32)
+            self.shape_cells = tuple(torch.as_tensor(g["shape_cells"][:], dtype=torch.int32))
+            self.hx = torch.as_tensor(g["hx"][:], dtype=torch.float32)
+            self.hy = torch.as_tensor(g["hy"][:], dtype=torch.float32)
+            self.hz = torch.as_tensor(g["hz"][:], dtype=torch.float32)
+
         self.transform = transform
+        self.device = torch.device(device)
         self._f = None  # per-process handle
 
     def _require_file(self):
@@ -27,11 +29,11 @@ class MasterDataset(Dataset):
         k = str(self.seeds[idx])
         s = f["samples"][k]
         sample = {
-            "seed": int(s.attrs.get("seed", int(k))),
-            "gz": np.array(s["gz"], dtype=np.float32),
-            "receiver_locations": np.array(s["receiver_locations"], dtype=np.float32),
-            "true_model": np.array(s["true_model"], dtype=np.float32),
-            "ind_active": np.array(s["ind_active"], dtype=np.uint8),
+            "seed": torch.tensor(int(s.attrs.get("seed", int(k))), dtype=torch.int32),
+            "gz": torch.as_tensor(s["gz"][:], dtype=torch.float32, device=self.device),
+            "receiver_locations": torch.as_tensor(s["receiver_locations"][:], dtype=torch.float32, device=self.device),
+            "true_model": torch.as_tensor(s["true_model"][:], dtype=torch.float32, device=self.device),
+            "ind_active": torch.as_tensor(s["ind_active"][:], dtype=torch.uint8, device=self.device),
         }
         if self.transform:
             sample = self.transform(sample)
@@ -47,13 +49,11 @@ def _worker_init_fn(_):
     if info is None:
         return
     ds = info.dataset
-    # Unwrap nested Subset(s) made by random_split etc.
     while isinstance(ds, Subset):
         ds = ds.dataset
-    # Close the underlying file handle if the base dataset supports it
     if hasattr(ds, "close"):
         ds.close()
 
 def collate(b):
-    xs, ys, _ms = zip(*[(x,y,m) for x,y,m,_ in b])
+    xs, ys = zip(*[(x,y) for x,y,_,_ in b])
     return torch.stack(xs), torch.stack(ys)

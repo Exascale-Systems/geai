@@ -16,29 +16,36 @@ def compute_stats(h5_path):
     return dict(gz_min=gz_min, gz_max=gz_max, rho_min=rho_min, rho_max=rho_max)
 
 def norm(a, a0, a1): 
+    a0 = torch.as_tensor(a0, dtype=a.dtype, device=a.device)
+    a1 = torch.as_tensor(a1, dtype=a.dtype, device=a.device)
     return 2*(a - a0)/(a1 - a0) - 1
 
-def denorm(y_norm: np.ndarray, stats: dict) -> np.ndarray:
-    a = float(stats["rho_min"])
-    b = float(stats["rho_max"])
-    y_norm = np.clip(y_norm, -1.0, 1.0)
-    return ((y_norm + 1.0) * 0.5) * (b - a) + a
+def denorm(y_norm, stats):
+    y = torch.clamp(y_norm, -1.0, 1.0)
+    a = torch.as_tensor(stats["rho_min"], dtype=y.dtype, device=y.device)
+    b = torch.as_tensor(stats["rho_max"], dtype=y.dtype, device=y.device)
+    return ((y + 1.0) * 0.5) * (b - a) + a
 
 def make_transform(shape_cells, stats):
     """
-    transform generator data to torch tensors in correct shape.
+    Transform generator output (already torch tensors) into model-ready tensors.
+    Produces:
+      x: (2, ny, nx)  -> [gz_norm, h_norm]
+      y: (nz, ny, nx) -> normalized true_model
+      m: (nz, ny, nx) -> bool mask
     """
     nx, ny, nz = map(int, shape_cells)
 
     def to_tensors(sample):
         gz = norm(sample["gz"], stats["gz_min"], stats["gz_max"])
         h = norm(sample["receiver_locations"][:,2], 0, 800) # survey height as a channel
-        x = torch.from_numpy(gz).float().view(1, ny, nx)
-        h = torch.from_numpy(h).float().view(1, ny, nx)
-        x = torch.cat([x, h], dim=0)
+        dev = gz.device
         tm = norm(sample["true_model"], stats["rho_min"], stats["rho_max"])
-        y = torch.from_numpy(tm).float().reshape(nx, ny, nz).permute(2,1,0).contiguous()
-        m = torch.from_numpy(sample["ind_active"]).bool().reshape(nx, ny, nz).permute(2,1,0).contiguous()
+        a = gz.to(dtype=torch.float32, device=dev).view(1, ny, nx)                   
+        b = h.to(dtype=torch.float32, device=dev).view(1, ny, nx)                     
+        x = torch.cat([a, b], dim=0)
+        y = tm.to(dtype=torch.float32, device=dev).reshape(nx, ny, nz).permute(2, 1, 0).contiguous()
+        m = sample["ind_active"].to(device=dev).reshape(nx, ny, nz).permute(2, 1, 0).contiguous().to(torch.bool)
         return x, y, m, sample["seed"]
 
     return to_tensors   
