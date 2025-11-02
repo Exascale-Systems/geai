@@ -53,3 +53,7 @@ def _worker_init_fn(_):
     # Close the underlying file handle if the base dataset supports it
     if hasattr(ds, "close"):
         ds.close()
+
+def collate(b):
+    xs, ys, _ms = zip(*[(x,y,m) for x,y,m,_ in b])
+    return torch.stack(xs), torch.stack(ys)

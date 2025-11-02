@@ -4,28 +4,20 @@ from torch.utils.tensorboard import SummaryWriter
 import pathlib
 import numpy as np
 from tqdm.auto import tqdm
-import matplotlib.pyplot as plt
-from src.load import MasterDataset, _worker_init_fn
-from src.transform import make_transform
+from src.load import MasterDataset, collate, _worker_init_fn
+from src.transform import *
 from src.nn import GravInvNet
-from src.normalize import compute_stats
 
 # data
 stats = compute_stats("datasets/test.h5")
 ds = MasterDataset("datasets/test.h5")
 ds.transform = make_transform(ds.shape_cells, stats)
-def collate(b):
-    xs, ys, _ms = zip(*[(x,y,m) for x,y,m,_ in b])
-    return torch.stack(xs), torch.stack(ys)
 g = torch.Generator().manual_seed(0) 
-n=len(ds) 
-n_tr=max(1,int(0.8*n)) # 80% train, 20% val
-n_va=n-n_tr
-tr_ds, va_ds = random_split(ds,[n_tr,n_va],generator=g)
+n=len(ds); n_tr=max(1,int(0.8*n)); n_va=n-n_tr # 80% train, 20% val
+bs=min(8,n_tr) # batch size
+tr_ds, va_ds = random_split(ds,[n_tr,n_va],generator=g) # dataset split
 pathlib.Path("splits").mkdir(parents=True, exist_ok=True)
 np.savez("splits/idx_test.npz", tr=np.array(tr_ds.indices), va=np.array(va_ds.indices))
-
-bs=min(8,n_tr)
 tr_ld = DataLoader(tr_ds,batch_size=bs,shuffle=True,num_workers=2,worker_init_fn=_worker_init_fn,collate_fn=collate, pin_memory=True)
 va_ld = DataLoader(va_ds,batch_size=bs,shuffle=False,num_workers=2,worker_init_fn=_worker_init_fn,collate_fn=collate, pin_memory=True)
 
