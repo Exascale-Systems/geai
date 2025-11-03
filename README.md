@@ -111,11 +111,11 @@ The generation of this dataset relies on a [forked version](https://github.com/k
     - Confidence in density at each voxel
 - Add Model Interpretability & Analysis Tools
     - Feature map visualization for encoder/decoder layers
+- SIMPEG comparison
 - Implement attention
 - 3D --> 3D UNET?
 - Multi-GPU
 - Magnetometry?
-- Bayesian Analysis
 
 ## Open Questions
 ### Geology
