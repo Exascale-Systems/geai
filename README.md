@@ -86,9 +86,16 @@ The generation of this dataset relies on a [forked version](https://github.com/k
 ## To-do
 - refactor gen/*
 - refactor plot
-- set markov matrix for StructuralGeo
-- set density mask for StructuralGeo
 - README.md
+- Create a config system for:
+    - Model hyperparameters (learning rates, architectures)
+    - Data parameters (grid sizes, noise levels, density ranges)
+    - Training settings (batch sizes, epochs, validation splits)
+- Add Model Interpretability & Analysis Tools
+    - Feature map visualization for encoder/decoder layers
+    - Attention mechanisms to show which gravity measurements drive density predictions
+    - Ablation studies on input channels (gravity vs height)
+    - Analysis of failure modes on different geological scenarios
 
 ## Open Questions
 ### Geology
@@ -96,14 +103,20 @@ The generation of this dataset relies on a [forked version](https://github.com/k
 - what kinds of deposits?
 - domain size? 
 - edge effects?
+- depth?
 
 ### Deep Learning
 - multi-sensor fusion?
 - pre-train data analysis?
 - what should i track during training?
 - alternative architectures?
+    - GAN / Flow Matching
+    - NeRF
+    - DeepSDF
+    - FNO / DeepONet
+    - PINN
 - epoches, batches, etc?
-
+- skip connections?
 
 
 

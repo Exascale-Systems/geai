@@ -9,15 +9,15 @@ from src.transform import *
 from src.nn import GravInvNet
 
 # data
-stats = compute_stats("datasets/test.h5")
-ds = MasterDataset("datasets/test.h5")
+stats = compute_stats("datasets/sg.h5")
+ds = MasterDataset("datasets/sg.h5")
 ds.transform = make_transform(ds.shape_cells, stats)
 g = torch.Generator().manual_seed(0) 
 n=len(ds); n_tr=max(1,int(0.8*n)); n_va=n-n_tr # 80% train, 20% val
 bs=min(8,n_tr) # batch size
 tr_ds, va_ds = random_split(ds,[n_tr,n_va],generator=g) # dataset split
 pathlib.Path("splits").mkdir(parents=True, exist_ok=True)
-np.savez("splits/idx_test.npz", tr=np.array(tr_ds.indices), va=np.array(va_ds.indices))
+np.savez("splits/sg.npz", tr=np.array(tr_ds.indices), va=np.array(va_ds.indices))
 tr_ld = DataLoader(tr_ds,batch_size=bs,shuffle=True,num_workers=2,worker_init_fn=_worker_init_fn,collate_fn=collate, pin_memory=True)
 va_ld = DataLoader(va_ds,batch_size=bs,shuffle=False,num_workers=2,worker_init_fn=_worker_init_fn,collate_fn=collate, pin_memory=True)
 
@@ -43,8 +43,7 @@ def run_epoch(ld, train=True, ema_alpha=0.1):
             if train:
                 opt.zero_grad(set_to_none=True)
             pred=net(gz)
-            loss = crit(pred, tgt
-                            )
+            loss = crit(pred, tgt)
             if train:
                 scaler.scale(loss).backward() 
                 scaler.unscale_(opt)
@@ -60,7 +59,7 @@ def run_epoch(ld, train=True, ema_alpha=0.1):
     return tot/max(1,n)
 
 # training loop
-E=2000; 
+E=200; 
 min_loss = 1e-5
 pbar=tqdm(range(0, E),desc="training",ncols=100)
 best = float("inf")
@@ -82,4 +81,4 @@ writer.flush()
 writer.close()
 
 # save model
-torch.save({"model": net.state_dict()}, "checkpoints/best.pt")
+torch.save({"model": net.state_dict()}, "checkpoints/final.pt")
