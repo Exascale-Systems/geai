@@ -83,40 +83,55 @@ The following paper describes a method for generating much more plausible/realis
 
 The generation of this dataset relies on a [forked version](https://github.com/kostubhagarwal/StructuralGeo) of the repo described in this paper. This fork adds a channel of information (in this case density) to 'Rock Category Mapping' as defined in StructuralGeo via a [lookup table](StructuralGeo/src/geogen/dataset/add_channel.py).
 
+## Goals
+
+#### 1. Classical survey vs Exascale survey
+- https://chatgpt.com/share/6908d6b1-b410-8003-99cb-7bb94bb91419
+- depth
+- scale
+#### 2. What economic value can be resolved?
+
+#### 3. How to improve predictions?
+
 ## To-do
-- refactor gen/*
-- refactor plot
-- README.md
-- Create a config system for:
-    - Model hyperparameters (learning rates, architectures)
-    - Data parameters (grid sizes, noise levels, density ranges)
-    - Training settings (batch sizes, epochs, validation splits)
+- Experiment
+    - Normalization (mean of zero, std deviation)
+    - Data Augementation
+        - Noise? 
+        - Rotation?
+    - Batch size
+    - Weight decay
+    - Dropout
+    - Ablation study for input
+- Refactor gen/*
+- Refactor plot
+- Add Comprehensive Evaluation & Metrics
+    - volumetric IoU
+    - MSE depth-wise
+    - Confidence in density at each voxel
 - Add Model Interpretability & Analysis Tools
     - Feature map visualization for encoder/decoder layers
-    - Attention mechanisms to show which gravity measurements drive density predictions
-    - Ablation studies on input channels (gravity vs height)
-    - Analysis of failure modes on different geological scenarios
+- Implement attention
+- 3D --> 3D UNET?
+- Multi-GPU
+- Magnetometry?
+- Bayesian Analysis
 
 ## Open Questions
 ### Geology
-- find deposits vs determine geology?
-- what kinds of deposits?
-- domain size? 
 - edge effects?
+- markov matrix?
+- what kinds of geophysical characteristics?
+- domain size? 
 - depth?
 
 ### Deep Learning
-- multi-sensor fusion?
-- pre-train data analysis?
-- what should i track during training?
 - alternative architectures?
-    - GAN / Flow Matching
+    - Flow Matching / GANs
     - NeRF
     - DeepSDF
     - FNO / DeepONet
     - PINN
-- epoches, batches, etc?
-- skip connections?
 
 
 
