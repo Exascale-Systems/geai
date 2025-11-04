@@ -94,33 +94,52 @@ The generation of this dataset relies on a [forked version](https://github.com/k
 #### 3. How to improve predictions?
 
 ## To-do
-- Experiment
-    - Normalization (mean of zero, std deviation)
-    - Data Augementation
-        - Noise? 
-        - Rotation?
-    - Batch size
-    - Weight decay
-    - Dropout
-    - Ablation study for input
+- inspect.py
+    - gravity
+        - RMSE
+        - R^2
+        - residual map
+    - density map
+        - mse vs l1 vs l2
+        - ^depth dependant
+        - IoU / dice coeff.
+    - *confidence
+- train.py
+    - track
+        - gradient norms
+        - weight histogram drift
+        - *feature map visualization
+    - try
+        - normalization
+            - mean of zero, std deviation
+        - Weight decay
+        - Learning Rate
+        - Data Augmentation
+            - Noise?
+            - Rotation
+            - X/Y flip
+        - Batch size
+        - Dropout
+        - Masked loss
+- nn.py
+    - Skip modules
+    - Attention
+    - 3D --> 3D UNET?
+    - Multi-sensor fusion
+        - Ablation study
 - Refactor gen/*
 - Refactor plot
-- Add Comprehensive Evaluation & Metrics
-    - volumetric IoU
-    - MSE depth-wise
-    - Confidence in density at each voxel
-- Add Model Interpretability & Analysis Tools
-    - Feature map visualization for encoder/decoder layers
-- SIMPEG comparison
-- Implement attention
-- 3D --> 3D UNET?
 - Multi-GPU
-- Magnetometry?
+- SIMPEG comparison
+    - noise floor
+    - deep learning vs simpeg
+- CG-5, Exail, comparison
 
 ## Open Questions
 ### Geology
 - edge effects?
 - markov matrix?
+- density mask?
 - what kinds of geophysical characteristics?
 - domain size? 
 - depth?
@@ -132,8 +151,3 @@ The generation of this dataset relies on a [forked version](https://github.com/k
     - DeepSDF
     - FNO / DeepONet
     - PINN
-
-
-
-
-
