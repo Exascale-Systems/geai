@@ -90,15 +90,15 @@ The generation of this dataset relies on a [forked version](https://github.com/k
 
 ## To-do
 - inspect.py
-    - gravity
-        - RMSE
-        - R^2
-        - residual map
     - density map
         - mse vs l1 vs l2
-        - ^depth dependant
-        - IoU / dice coeff.
-        - *confidence
+        - slice (x,y,z)
+        - slice residuals
+            - mse vs l1
+            - IoU / dice coeff.
+    - refactor
+- refactor plot.py
+- refactor gen/*
 - train.py
     - track
         - gradient norms
@@ -116,19 +116,27 @@ The generation of this dataset relies on a [forked version](https://github.com/k
         - Batch size
         - Dropout
         - Masked loss
+- inspect.py
+    - *confidence
 - nn.py
     - Skip modules
     - Attention
     - 3D --> 3D UNET?
     - Multi-sensor fusion
         - Ablation study
-- Refactor gen/*
 - Refactor plot
 - Multi-GPU
 - SIMPEG comparison
     - noise floor
     - deep learning vs simpeg
 - vs CG-5 vs Exail
+
+## Completed
+- inspect.py
+    - gravity
+        - RMSE
+        - R^2
+        - residual map
 
 ## Open Questions
 ### Geology
