@@ -84,14 +84,9 @@ The following paper describes a method for generating much more plausible/realis
 The generation of this dataset relies on a [forked version](https://github.com/kostubhagarwal/StructuralGeo) of the repo described in this paper. This fork adds a channel of information (in this case density) to 'Rock Category Mapping' as defined in StructuralGeo via a [lookup table](StructuralGeo/src/geogen/dataset/add_channel.py).
 
 ## Goals
-
-#### 1. Classical survey vs Exascale survey
-- https://chatgpt.com/share/6908d6b1-b410-8003-99cb-7bb94bb91419
-- depth
-- scale
-#### 2. What economic value can be resolved?
-
-#### 3. How to improve predictions?
+1. What economic value can be resolved?
+2. Classical survey vs exascale survey?
+3. How to improve predictions?
 
 ## To-do
 - inspect.py
@@ -103,7 +98,7 @@ The generation of this dataset relies on a [forked version](https://github.com/k
         - mse vs l1 vs l2
         - ^depth dependant
         - IoU / dice coeff.
-    - *confidence
+        - *confidence
 - train.py
     - track
         - gradient norms
@@ -133,7 +128,7 @@ The generation of this dataset relies on a [forked version](https://github.com/k
 - SIMPEG comparison
     - noise floor
     - deep learning vs simpeg
-- CG-5, Exail, comparison
+- vs CG-5 vs Exail
 
 ## Open Questions
 ### Geology
