@@ -89,9 +89,6 @@ The generation of this dataset relies on a [forked version](https://github.com/k
 3. How to improve predictions?
 
 ## To-do
-- refactor inspect.py
-- refactor plot.py
-- refactor gen/*
 - SIMPEG comparison
     - noise floor
     - deep learning vs simpeg
@@ -113,6 +110,8 @@ The generation of this dataset relies on a [forked version](https://github.com/k
         - Dropout
         - Masked loss
         - Multi-GPU
+- refactor plot.py / inspect.py
+- refactor gen/*
 - inspect.py
     - *confidence
 - nn.py
