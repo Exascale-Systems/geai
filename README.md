@@ -85,11 +85,8 @@ The generation of this dataset relies on a [forked version](https://github.com/k
 
 ## Goals
 1. What economic value can be resolved?
-    - difficult validation data
 2. Classical survey vs exascale survey?
-    - noise floor vs accuracy (jaffe figure of merit)
 3. How to improve predictions?
-    - scalar or vector measurement
 
 ## To-do
 - train.py
@@ -104,10 +101,11 @@ The generation of this dataset relies on a [forked version](https://github.com/k
     - learning Rate
     - batch size
     - dropout
----
 - determine figure of merit (CG-5 vs Exail)
     - SIMPEG
     - Deeplearning 
+- scalar vs vector measurement
+------
 - refactor plot.py / inspect.py
 - refactor gen/*
 - nn.py
