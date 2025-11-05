@@ -85,41 +85,39 @@ The generation of this dataset relies on a [forked version](https://github.com/k
 
 ## Goals
 1. What economic value can be resolved?
+    - difficult validation data
 2. Classical survey vs exascale survey?
+    - noise floor vs accuracy (jaffe figure of merit)
 3. How to improve predictions?
+    - scalar or vector measurement
 
 ## To-do
 - train.py
-    - track
-        - gradient norms
-        - weight histogram drift
-        - *feature map visualization
-    - try
-        - normalization
-            - mean of zero, std deviation
-        - Weight decay
-        - Learning Rate
-        - Data Augmentation
-            - Noise?
-            - Rotation
-            - X/Y flip
-        - Batch size
-        - Dropout
-        - Masked loss
-        - Multi-GPU
+    - normalization
+        - mean of zero, std deviation
+    - loss function
+    - data augmentation
+        - noise
+        - rotation
+        - flips
+    - weight decay
+    - learning Rate
+    - batch size
+    - dropout
+---
+- determine figure of merit (CG-5 vs Exail)
+    - SIMPEG
+    - Deeplearning 
 - refactor plot.py / inspect.py
 - refactor gen/*
 - nn.py
-    - Skip modules
-    - Attention
+    - skip modules
+    - attention
     - 3D --> 3D UNET?
-    - Multi-sensor fusion
+    - multi-sensor fusion
         - Ablation study
-    - Confidence
-- SIMPEG comparison
-    - noise floor
-    - deep learning vs simpeg
-- vs CG-5 vs Exail
+- confidence
+- multi gpu
 
 ## Completed
 - inspect.py / plot.py
@@ -132,6 +130,11 @@ The generation of this dataset relies on a [forked version](https://github.com/k
         - slice plot (x,y,z)
         - slice residuals plot (x,y,z)
             - mse vs l1 vs IoU vs dice coeff.
+- train.py
+    - track
+        - gradient norms
+        - weight histogram drift
+        - *feature map visualization
 
 ## Open Questions
 ### Geology
