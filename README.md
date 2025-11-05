@@ -89,16 +89,12 @@ The generation of this dataset relies on a [forked version](https://github.com/k
 3. How to improve predictions?
 
 ## To-do
-- inspect.py
-    - density map
-        - mse vs l1 vs l2
-        - slice (x,y,z)
-        - slice residuals
-            - mse vs l1
-            - IoU / dice coeff.
-    - refactor
+- refactor inspect.py
 - refactor plot.py
 - refactor gen/*
+- SIMPEG comparison
+    - noise floor
+    - deep learning vs simpeg
 - train.py
     - track
         - gradient norms
@@ -116,6 +112,7 @@ The generation of this dataset relies on a [forked version](https://github.com/k
         - Batch size
         - Dropout
         - Masked loss
+        - Multi-GPU
 - inspect.py
     - *confidence
 - nn.py
@@ -124,19 +121,19 @@ The generation of this dataset relies on a [forked version](https://github.com/k
     - 3D --> 3D UNET?
     - Multi-sensor fusion
         - Ablation study
-- Refactor plot
-- Multi-GPU
-- SIMPEG comparison
-    - noise floor
-    - deep learning vs simpeg
 - vs CG-5 vs Exail
 
 ## Completed
-- inspect.py
+- inspect.py / plot.py
     - gravity
-        - RMSE
-        - R^2
-        - residual map
+        - residual plot
+            - RMSE
+            - R^2
+    - density map
+        - mse vs l1 vs dice vs IoU
+        - slice plot (x,y,z)
+        - slice residuals plot (x,y,z)
+            - mse vs l1 vs IoU vs dice coeff.
 
 ## Open Questions
 ### Geology
