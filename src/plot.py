@@ -10,7 +10,7 @@ def plot_topography(topo_xyz):
     p = pv.Plotter()
     p.add_points(pts, render_points_as_spheres=True, point_size=8)
     p.show_bounds(grid='front', xtitle='X', ytitle='Y', ztitle='Z')
-    p.show()
+    p.show(auto_close=False, interactive_update=True)
 
 def plot_density_contrast_3D(mesh, ind_active, density_values):
     """
@@ -30,7 +30,7 @@ def plot_density_contrast_3D(mesh, ind_active, density_values):
     grid = pv.RectilinearGrid(x_edges, y_edges, z_edges)
     grid.cell_data["active"]  = active_vol.flatten(order="F").astype(np.uint8)
     grid.cell_data["density"] = density_vol.flatten(order="F").astype(float)
-    dens_thresh = grid.threshold(value=0.5, scalars="density", invert=False)
+    dens_thresh = grid.threshold(value=0.1, scalars="density", invert=False)
     p = pv.Plotter()
     p.add_mesh(grid, scalars="active", opacity=0.4, show_edges=False, show_scalar_bar=False)
     p.add_mesh(
@@ -60,7 +60,7 @@ def plot_density_contrast_3D(mesh, ind_active, density_values):
     p.add_text("Density Contrast (g/cc)", font_size=12, position="upper_edge")
     p.camera_position = "iso"
     p.camera.azimuth += 270
-    p.show()
+    p.show(auto_close=False, interactive_update=True)
 
 def plot_gravity_measurements(receiver_locations, dpred, title="Gravity Anomaly (Z-component)",
                               units="$mgal$", show_points=True, cmap="bwr", ncontour=30):
@@ -94,7 +94,7 @@ def plot_gravity_measurements(receiver_locations, dpred, title="Gravity Anomaly 
     p.show_bounds(grid="front", xtitle="x (m)", ytitle="y (m)", ztitle="z (m)")
     p.enable_parallel_projection()
     p.view_xy()
-    p.show()
+    p.show(auto_close=False, interactive_update=True)
 
 def plot_gravity_residuals(receiver_locations, dobs, dpred, title="Gravity Residuals",
                           show_points=True, cmap="RdBu_r", ncontour=20):
@@ -140,7 +140,7 @@ def plot_gravity_residuals(receiver_locations, dobs, dpred, title="Gravity Resid
     p.show_bounds(grid="front", xtitle="x (m)", ytitle="y (m)", ztitle="z (m)")
     p.enable_parallel_projection()
     p.view_xy()
-    p.show()
+    p.show(auto_close=False, interactive_update=True)
 
 def plot_density_slices(mesh, ind_active, density_values, slice_type='y', slice_indices=None, cmap="plasma"):
     """
@@ -226,7 +226,7 @@ def plot_density_slices(mesh, ind_active, density_values, slice_type='y', slice_
         p.enable_parallel_projection()
         p.view_xy()
     
-    p.show()
+    p.show(auto_close=False, interactive_update=True)
 
 def plot_density_slice_residuals(mesh, ind_active, density_true, density_pred, slice_type='y', slice_indices=None, cmap="RdBu_r"):
     """
@@ -353,4 +353,4 @@ def plot_density_slice_residuals(mesh, ind_active, density_true, density_pred, s
         p.enable_parallel_projection()
         p.view_xy()
     
-    p.show()
+    p.show(auto_close=False, interactive_update=True)

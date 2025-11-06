@@ -22,13 +22,17 @@ def norm(a, a0, a1):
     a1 = torch.as_tensor(a1, dtype=a.dtype, device=a.device)
     return 2*(a - a0)/(a1 - a0) - 1
 
-def denorm(y_norm, stats):
+def denorm(y_norm, stats, data_type="rho"):
     y = torch.clamp(torch.as_tensor(y_norm), -1.0, 1.0)
-    a = torch.as_tensor(stats["rho_min"], dtype=y.dtype, device=y.device)
-    b = torch.as_tensor(stats["rho_max"], dtype=y.dtype, device=y.device)
+    if data_type == "rho":
+        a = torch.as_tensor(stats["rho_min"], dtype=y.dtype, device=y.device)
+        b = torch.as_tensor(stats["rho_max"], dtype=y.dtype, device=y.device)
+    elif data_type == "gz":
+        a = torch.as_tensor(stats["gz_min"], dtype=y.dtype, device=y.device)
+        b = torch.as_tensor(stats["gz_max"], dtype=y.dtype, device=y.device)
     return ((y + 1.0) * 0.5) * (b - a) + a
 
-def make_transform(shape_cells, stats):
+def make_transform(shape_cells, stats, noise=(0, 0)):
     """
     Transform generator output (already torch tensors) into model-ready tensors.
     Produces:
@@ -40,8 +44,8 @@ def make_transform(shape_cells, stats):
 
     def to_tensors(sample):
         g = sample["gz"]
-        noise = add_noise(g.shape, accuracy=0.001, confidence=0.95) #data augementation of noise
-        g+=noise
+        n = add_noise(g.shape, accuracy=noise[0], confidence=noise[1]) #data augementation of noise
+        g+=n
         gz = norm(g, stats["gz_min"], stats["gz_max"])
         # h = norm(sample["receiver_locations"][:,2], 0, 800) # survey height as a channel
         dev = gz.device

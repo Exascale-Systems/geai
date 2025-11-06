@@ -1,4 +1,3 @@
-import argparse
 import pathlib
 import numpy as np
 from tqdm.auto import tqdm
@@ -11,27 +10,16 @@ from src.nn import GravInvNet
 def evaluate_model(model_path, dataset_path, splits_path=None, threshold=0.1, batch_size=8, device=None):
     """
     Evaluate a trained model on validation and training data.
-    
-    Args:
-        model_path: Path to the saved model checkpoint
-        dataset_path: Path to the HDF5 dataset
-        splits_path: Path to the train/val splits .npz file (optional)
-        threshold: Threshold for binary classification (IoU/Dice)
-        batch_size: Batch size for evaluation
-        device: Device to run evaluation on
-    
-    Returns:
-        dict: Evaluation results for train and validation sets
     """
     if device is None:
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        device = torch.device('cuda:7')
     
     print(f"Using device: {device}")
     
     # Load dataset and compute stats
     stats = compute_stats(dataset_path)
     ds = MasterDataset(dataset_path)
-    ds.transform = make_transform(ds.shape_cells, stats)
+    ds.transform = make_transform(ds.shape_cells, stats, noise=(0.1, 0.95))
     
     # Load model
     net = GravInvNet().to(device)
@@ -138,36 +126,14 @@ def print_results(results):
     print("\n" + "="*60)
 
 def main():
-    parser = argparse.ArgumentParser(description='Evaluate trained gravimetric inversion model')
-    parser.add_argument('--model', type=str, default='weights/single_block.pt',
-                        help='Path to model checkpoint (default: checkpoints/best.pt)')
-    parser.add_argument('--dataset', type=str, default='datasets/single_block.h5',
-                        help='Path to HDF5 dataset (default: datasets/sg_overfit.h5)')
-    parser.add_argument('--splits', type=str, default='splits/single_block.npz',
-                        help='Path to train/val splits file (default: splits/single_block.npz)')
-    parser.add_argument('--threshold', type=float, default=0.1,
-                        help='Threshold for binary classification (default: 0.1)')
-    parser.add_argument('--batch-size', type=int, default=8,
-                        help='Batch size for evaluation (default: 8)')
-    parser.add_argument('--device', type=str, default=None,
-                        help='Device to use (cuda/cpu, default: auto-detect)')
-    
-    args = parser.parse_args()
-    
-    # Convert device string to torch device
-    if args.device:
-        device = torch.device(args.device)
-    else:
-        device = None
-    
-    # Run evaluation
+    # Run evaluation with default parameters
     results = evaluate_model(
-        model_path=args.model,
-        dataset_path=args.dataset,
-        splits_path=args.splits,
-        threshold=args.threshold,
-        batch_size=args.batch_size,
-        device=device
+        model_path='weights/single_block.pt',
+        dataset_path='datasets/single_block.h5',
+        splits_path='splits/single_block.npz',
+        threshold=0.1,
+        batch_size=8,
+        device=None
     )
     
     # Print results

@@ -23,7 +23,7 @@ tr_ld = DataLoader(tr_ds,batch_size=bs,shuffle=True,num_workers=2,worker_init_fn
 va_ld = DataLoader(va_ds,batch_size=bs,shuffle=False,num_workers=2,worker_init_fn=_worker_init_fn,collate_fn=collate, pin_memory=True)
 
 # device, model, optimzer, hyperparams, loss, mixed precision, tensorboard
-dev = torch.device('cuda' if torch.cuda.is_available() else 'cpu'); print(dev)
+dev = torch.device('cuda:7'); print(dev)
 net = GravInvNet().to(dev)
 lr=1e-3
 wd=0.0

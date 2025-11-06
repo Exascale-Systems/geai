@@ -35,21 +35,20 @@ def inspect_truth(h5_path: Path, seed_index: int = 0):
 
 @torch.no_grad()
 def inspect_prediction(sample: dict, shape_cells: tuple, stats: dict, net: GravInvNet, device: torch.device):
-    """Forward pass (Evaluate) sample and return prediction."""
-    x, _, _, _ = make_transform(shape_cells, stats)(sample)
-    noise = add_noise(x.shape, 0.001, confidence=0.95, seed=0) # add simulate sensing noise 
-    x += torch.from_numpy(noise)
-    x = x.unsqueeze(0).to(device)                          
+    """Forward pass (Evaluate) sample and return prediction and input x with same shape as y."""
+    x, y, _, _ = make_transform(shape_cells, stats, (0.01, 0.95))(sample)
+    x_input = x.unsqueeze(0).to(device)                          
     net.eval()
-    pred = denorm(net(x)[0].permute(2,1,0).reshape(-1), stats)    
-    return pred
+    pred = denorm(net(x_input)[0].permute(2,1,0).reshape(-1), stats, data_type="rho")    
+    x_reshaped = denorm(x.squeeze(), stats, data_type="gz").cpu().numpy().flatten()
+    return pred, x_reshaped
 
 def main():
     data = np.load("splits/single_block.npz")
     tr_indices, va_indices = data["tr"], data["va"]
     path = Path("datasets/single_block.h5")
-    sample, rx, gz, shape, ind, true, mesh = inspect_truth(h5_path=path, seed_index=tr_indices[3])
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    sample, rx, gz, shape, ind, true, mesh = inspect_truth(h5_path=path, seed_index=va_indices[3])
+    device = torch.device("cuda:7")
     net = GravInvNet().to(device)
     ckpt_path = Path("weights/single_block.pt")
     if ckpt_path.exists():
@@ -59,7 +58,7 @@ def main():
     else:
         print("Using untrained model.")
     stats = compute_stats(str(path))
-    pred = inspect_prediction(sample, shape, stats, net, device)
+    pred, x = inspect_prediction(sample, shape, stats, net, device)
     _, survey = gravity_survey(rx, components=("gz",))
     _, _, model_map, _ = init_model(mesh, rx, 0)
     sim = gravity.simulation.Simulation3DIntegral(
@@ -72,18 +71,36 @@ def main():
     pred = pred.cpu().numpy()
     y = sim.dpred(pred)
     iou, dice = iou_dice(true, pred, 0.1)
-
-    plot_topography(rx)
+   
+    # plot_topography(rx)
     plot_gravity_measurements(rx, gz)
     plot_density_contrast_3D(mesh, ind, true)
-    plot_density_slices(mesh, ind, true, slice_type='y')
+    # plot_density_slices(mesh, ind, true, slice_type='y')
+    # plot_gravity_residuals(rx, gz, x)
 
-    plot_gravity_measurements(rx, y)
+    plot_gravity_measurements(rx, x)
     plot_density_contrast_3D(mesh, ind, pred)
-    plot_density_slices(mesh, ind, pred, slice_type='y')
+    # plot_density_slices(mesh, ind, pred, slice_type='y')
+    plot_gravity_measurements(rx, y)
 
-    plot_gravity_residuals(rx, gz, y)
-    plot_density_slice_residuals(mesh, ind, true, pred, slice_type='y')
+    # plot_gravity_residuals(rx, x, y)
+    # plot_density_slice_residuals(mesh, ind, true, pred, slice_type='y')
+
+    import matplotlib.pyplot as plt
+    plt.hist(gz, bins=35)
+    plt.show()
+
+    plt.hist(x, bins=35)
+    plt.show()
+
+    plt.hist(y, bins=35)
+    plt.show()
+
+    print(gz.min(), gz.max())
+    print(x.min(), x.max())
+    print(y.min(), y.max())
+    
+    input("Press Enter to close all plots...")  # Keep plots open until user input
     print(f"RMSE: {rmse(true, pred):.4f}")
     print(f"L1: {l1(true, pred):.4f}")
     print(f"IoU: {iou:.3f}")
