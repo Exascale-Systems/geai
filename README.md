@@ -89,6 +89,9 @@ The generation of this dataset relies on a [forked version](https://github.com/k
 3. How to improve predictions?
 
 ## To-do
+- noise vs error (l1, rmse, iou)
+    - SIMPEG
+    - Deeplearning (no, medium, high)
 - train.py
     - normalization
         - mean of zero, std deviation
@@ -133,6 +136,7 @@ The generation of this dataset relies on a [forked version](https://github.com/k
         - gradient norms
         - weight histogram drift
         - *feature map visualization
+- figure out gal/sqrt(Hz)
 
 ## Open Questions
 ### Geology

@@ -9,7 +9,6 @@ def generate_batch(
     ds_size=20000,                                     # number of samples to generate 
     bounds = ((0, 3.2e4), (0, 3.2e4), (0, 1.6e4)),  # domain bounds (m)
     resolution = (32, 32, 16),                      # domain discretization (m)
-    seed = 0
     ):
     # invariant across samples
     dataset = GeoData3DStreamingDataset(model_bounds=bounds, model_resolution=resolution)
@@ -29,7 +28,6 @@ def generate_batch(
                 engine="choclo",
             )
             y = sim.dpred(model)
-            y += add_noise(y.shape, accuracy=0.05, confidence=0.95, seed=0)
             master.add(gz=y, receiver_locations=receiver_locations, true_model=model, ind_active=ind_active, seed=k)
             model.fill(0.0)
     return out_path

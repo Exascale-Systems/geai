@@ -25,7 +25,7 @@ class Encoder2D(nn.Module):
     def __init__(self):
         super().__init__()
         ch = [128, 256, 512, 1024]
-        self.first = down2d(2, ch[0])  # (B,2,32,32)
+        self.first = down2d(1, ch[0])  # num channels
         stages = []
         in_c = ch[0]
         for out_c in ch[1:]:

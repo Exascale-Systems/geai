@@ -36,20 +36,22 @@ def inspect_truth(h5_path: Path, seed_index: int = 0):
 @torch.no_grad()
 def inspect_prediction(sample: dict, shape_cells: tuple, stats: dict, net: GravInvNet, device: torch.device):
     """Forward pass (Evaluate) sample and return prediction."""
-    x, _, _, _ = make_transform(shape_cells, stats)(sample) 
+    x, _, _, _ = make_transform(shape_cells, stats)(sample)
+    noise = add_noise(x.shape, 0.001, confidence=0.95, seed=0) # add simulate sensing noise 
+    x += torch.from_numpy(noise)
     x = x.unsqueeze(0).to(device)                          
     net.eval()
     pred = denorm(net(x)[0].permute(2,1,0).reshape(-1), stats)    
     return pred
 
 def main():
-    data = np.load("splits/sg.npz")
+    data = np.load("splits/single_block.npz")
     tr_indices, va_indices = data["tr"], data["va"]
-    path = Path("datasets/sg.h5")
+    path = Path("datasets/single_block.h5")
     sample, rx, gz, shape, ind, true, mesh = inspect_truth(h5_path=path, seed_index=tr_indices[3])
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     net = GravInvNet().to(device)
-    ckpt_path = Path("weights/sg.pt")
+    ckpt_path = Path("weights/single_block.pt")
     if ckpt_path.exists():
         state = torch.load(f=ckpt_path, map_location=device)
         net.load_state_dict(state["model"] if "model" in state else state)
@@ -71,14 +73,14 @@ def main():
     y = sim.dpred(pred)
     iou, dice = iou_dice(true, pred, 0.1)
 
-    # plot_topography(rx)
-    # plot_gravity_measurements(rx, gz)
-    # plot_density_contrast_3D(mesh, ind, true)
-    # plot_density_slices(mesh, ind, true, slice_type='y')
+    plot_topography(rx)
+    plot_gravity_measurements(rx, gz)
+    plot_density_contrast_3D(mesh, ind, true)
+    plot_density_slices(mesh, ind, true, slice_type='y')
 
-    # plot_gravity_measurements(rx, y)
-    # plot_density_contrast_3D(mesh, ind, pred)
-    # plot_density_slices(mesh, ind, pred, slice_type='y')
+    plot_gravity_measurements(rx, y)
+    plot_density_contrast_3D(mesh, ind, pred)
+    plot_density_slices(mesh, ind, pred, slice_type='y')
 
     plot_gravity_residuals(rx, gz, y)
     plot_density_slice_residuals(mesh, ind, true, pred, slice_type='y')

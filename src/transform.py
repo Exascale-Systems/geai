@@ -2,6 +2,7 @@ import torch
 import h5py
 import numpy as np
 import math
+from src.gen.StructuralGeo_gen import add_noise
 
 def compute_stats(h5_path):
     gz_min, gz_max, rho_min, rho_max = math.inf, -math.inf, math.inf, -math.inf
@@ -38,13 +39,17 @@ def make_transform(shape_cells, stats):
     nx, ny, nz = map(int, shape_cells)
 
     def to_tensors(sample):
-        gz = norm(sample["gz"], stats["gz_min"], stats["gz_max"])
-        h = norm(sample["receiver_locations"][:,2], 0, 800) # survey height as a channel
+        g = sample["gz"]
+        noise = add_noise(g.shape, accuracy=0.001, confidence=0.95) #data augementation of noise
+        g+=noise
+        gz = norm(g, stats["gz_min"], stats["gz_max"])
+        # h = norm(sample["receiver_locations"][:,2], 0, 800) # survey height as a channel
         dev = gz.device
         tm = norm(sample["true_model"], stats["rho_min"], stats["rho_max"])
         a = gz.to(dtype=torch.float32, device=dev).view(1, ny, nx)                   
-        b = h.to(dtype=torch.float32, device=dev).view(1, ny, nx)                     
-        x = torch.cat([a, b], dim=0)
+        # b = h.to(dtype=torch.float32, device=dev).view(1, ny, nx)                     
+        # x = torch.cat([a, b], dim=0)
+        x = a  # single channel
         y = tm.to(dtype=torch.float32, device=dev).reshape(nx, ny, nz).permute(2, 1, 0).contiguous()
         m = torch.as_tensor(sample["ind_active"]).to(device=dev).reshape(nx, ny, nz).permute(2, 1, 0).contiguous().to(torch.bool)
         return x, y, m, sample["seed"]
