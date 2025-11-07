@@ -30,7 +30,7 @@ def plot_density_contrast_3D(mesh, ind_active, density_values):
     grid = pv.RectilinearGrid(x_edges, y_edges, z_edges)
     grid.cell_data["active"]  = active_vol.flatten(order="F").astype(np.uint8)
     grid.cell_data["density"] = density_vol.flatten(order="F").astype(float)
-    dens_thresh = grid.threshold(value=0.1, scalars="density", invert=False)
+    dens_thresh = grid.threshold(value=0.01, scalars="density", invert=False)
     p = pv.Plotter()
     p.add_mesh(grid, scalars="active", opacity=0.4, show_edges=False, show_scalar_bar=False)
     p.add_mesh(

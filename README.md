@@ -90,8 +90,8 @@ The generation of this dataset relies on a [forked version](https://github.com/k
 
 ## To-do
 - noise vs error (l1, rmse, iou)
-    - SIMPEG
     - Deeplearning (no, medium, high)
+    - SIMPEG
 - train.py
     - normalization
         - mean of zero, std deviation
@@ -105,8 +105,6 @@ The generation of this dataset relies on a [forked version](https://github.com/k
     - batch size
     - dropout
 - determine figure of merit (CG-5 vs Exail)
-    - SIMPEG
-    - Deeplearning 
 - scalar vs vector measurement
 ------
 - refactor plot.py / inspect.py
