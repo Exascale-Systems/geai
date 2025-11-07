@@ -89,6 +89,8 @@ The generation of this dataset relies on a [forked version](https://github.com/k
 3. How to improve predictions?
 
 ## To-do
+- refactor evaluate, inspect
+- refactor plot.py / inspect.py
 - noise vs error (l1, rmse, iou)
     - Deeplearning (no, medium, high)
     - SIMPEG
@@ -107,7 +109,6 @@ The generation of this dataset relies on a [forked version](https://github.com/k
 - determine figure of merit (CG-5 vs Exail)
 - scalar vs vector measurement
 ------
-- refactor plot.py / inspect.py
 - refactor gen/*
 - nn.py
     - skip modules
