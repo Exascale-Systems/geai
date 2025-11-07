@@ -140,7 +140,7 @@ def main():
     print_results(results)
     
     # Save results to file
-    output_file = 'evaluation_results.npz'
+    output_file = 'evaluation/results.npz'
     np.savez(output_file, **{f"{split}_{metric}": value 
                             for split, metrics in results.items() 
                             for metric, value in metrics.items()})

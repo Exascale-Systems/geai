@@ -89,7 +89,7 @@ The generation of this dataset relies on a [forked version](https://github.com/k
 3. How to improve predictions?
 
 ## To-do
-- refactor evaluate, inspect
+- refactor evaluate, inspect, train
 - refactor plot.py / inspect.py
 - noise vs error (l1, rmse, iou)
     - Deeplearning (no, medium, high)
