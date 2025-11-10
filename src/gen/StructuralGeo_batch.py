@@ -1,6 +1,6 @@
 
 from src.gen.StructuralGeo_gen import *
-from io.hdf5_writer import MasterWriter
+from src.gen.hdf5_writer import MasterWriter
 from tqdm import tqdm
 from StructuralGeo.src.geogen.dataset import GeoData3DStreamingDataset  
 

@@ -1,5 +1,5 @@
 from src.gen.gen import *
-from io.hdf5_writer import MasterWriter
+from src.gen.hdf5_writer import MasterWriter
 from tqdm import tqdm  
 
 def generate_batch(

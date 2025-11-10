@@ -5,11 +5,13 @@ threshold = 0.1
 import numpy as np
 import torch
 from src.gen.StructuralGeo_gen import gravity_survey, init_model
-from src.transform import make_transform, denorm
+from src.data import make_transform
+from src.utils import denorm
 from src.metrics import rmse, l1, iou_dice
 from src.plot import *
+from src.gen.StructuralGeo_gen import create_mesh
 from src.utils import load_model
-from src.data import load_split_sample
+from src.data import data_prep
 from simpeg.potential_fields import gravity
 from simpeg import data, inverse_problem, regularization, optimization, directives, inversion, data_misfit
 
@@ -25,13 +27,22 @@ def inspect_prediction(sample: dict, net: torch.nn.Module, device: torch.device,
     x = denorm(x.squeeze(), stats, data_type="gz").cpu().numpy().flatten()
     return y, x
 
-def sample_nn(data_path: str = "data/single_block.h5", split_path: str = "splits/single_block.npz", accuracy: float = 0.01, confidence: float = 0.95,
+def sample_nn(data_path: str = "single_block", split_path: str = "single_block", accuracy: float = 0.01, confidence: float = 0.95,
               split: str = "val", idx: int = idx, model_path: str = "models/single_block.pt", threshold: float = threshold, device: torch.device = device):
     """
     Neural network prediction sampling.
     """
-    data, stats = load_split_sample(data_path, split_path, split, idx)
-    sample, rx, gz, shape, ind, true, mesh = data, data['rx'], data['gz'], data['shape'], data['ind_active'], data['true_model'], data['mesh']
+    tr_ds, va_ds, tr_ld, va_ld, stats = data_prep(data_path, split_path, 1, load_splits=True, transform=False)
+    ds = va_ds if split == "va" else tr_ds
+    sample_data = ds[idx]
+    rx, gz = sample_data['receiver_locations'].cpu().numpy(), sample_data['gz'].cpu().numpy()
+    ind = sample_data['ind_active'].cpu().numpy().astype(bool)
+    true = np.zeros_like(ind, float)
+    true[ind] = sample_data['true_model'].cpu().numpy()
+    nx, ny, nz = map(int, ds.dataset.shape_cells)
+    mesh = create_mesh(bounds=((0, nx*ds.dataset.hx[0]), (0, ny*ds.dataset.hy[0]), (0, nz*ds.dataset.hz[0])), resolution=(nx, ny, nz))
+    shape = (nx, ny, nz)
+    sample = sample_data
     net, device = load_model(model_path, device)
     pred, x = inspect_prediction(sample, net, device, shape, stats, accuracy, confidence)
     _, survey = gravity_survey(rx, components=("gz",))
@@ -61,8 +72,18 @@ def sample_bayesian(data_path: str = "data/single_block.h5", split_path: str = "
     """
     Bayesian inversion (SIMPEG) sampling.
     """
-    sample_data, _ = load_split_sample(data_path, split_path, split, idx)
-    rx, gz, ind, true, mesh = sample_data['rx'], sample_data['gz'], sample_data['ind_active'], sample_data['true_model'], sample_data['mesh']
+    dataset_name = data_path.split('/')[-1].replace('.h5', '')
+    tr_ds, va_ds, tr_ld, va_ld, stats = data_prep(dataset_name, dataset_name, 1, load_splits=True, transform=False)
+    ds = va_ds if split == "va" else tr_ds
+    sample_data = ds[idx]
+    
+    # Extract data and create mesh
+    rx, gz = sample_data['receiver_locations'].cpu().numpy(), sample_data['gz'].cpu().numpy()
+    ind = sample_data['ind_active'].cpu().numpy().astype(bool)
+    true = np.zeros_like(ind, float)
+    true[ind] = sample_data['true_model'].cpu().numpy()
+    nx, ny, nz = map(int, ds.dataset.shape_cells)
+    mesh = create_mesh(bounds=((0, nx*ds.dataset.hx[0]), (0, ny*ds.dataset.hy[0]), (0, nz*ds.dataset.hz[0])), resolution=(nx, ny, nz))
     _, survey = gravity_survey(rx, components=("gz",))
     _, _, model_map, _ = init_model(mesh, rx, 0)
     sim = gravity.simulation.Simulation3DIntegral(
@@ -121,7 +142,7 @@ def sample_bayesian(data_path: str = "data/single_block.h5", split_path: str = "
     print(f"Dice: {dice:.3f}")
 
 if __name__ == "__main__":
-    # sample_nn(data_path="data/single_block.h5", split_path="splits/single_block.npz", accuracy=0.01, confidence=0.95,
-    #           split="val", idx=3, model_path="models/single_block.pt", threshold=0.5)
-    sample_bayesian(data_path="data/single_block.h5", split_path="splits/single_block.npz",
-                    split="val", idx=4, threshold=0.5)
+    sample_nn(data_path="single_block", split_path="single_block", accuracy=0.01, confidence=0.95,
+              split="va", idx=3, model_path="models/single_block.pt", threshold=0.5)
+    # sample_bayesian(data_path="single_block", split_path="single_block",
+    #                 split="va", idx=3, threshold=0.5)

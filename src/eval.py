@@ -4,38 +4,63 @@ import torch
 from torch.utils.data import DataLoader
 from src.data import data_prep
 from src.gen.StructuralGeo_gen import gravity_survey, init_model, create_mesh
-from src.transform import denorm
+from src.utils import denorm
 from src.utils import load_model
 from simpeg.potential_fields import gravity
 from simpeg import data, inverse_problem, regularization, optimization, directives, inversion, data_misfit
 
-def eval_metrics_nn(model, dataloader: DataLoader, stats: dict, device: str = "cuda:7", threshold=0.1, split_name="", show_progress=False):
+def eval_metrics_nn(model, dataloader: DataLoader, stats: dict, device: str = "cuda:7", threshold=0.1, split_name="", show_progress=False, sample_idx=None):
     """
     Evaluate metrics on a dataloader using the given neural network model.
+    If sample_idx is provided, evaluates only that specific sample.
     """
     model.eval()
     sum_se, sum_ae, n_samples = 0.0, 0.0, 0
     intersection, union, true_sum, pred_sum = 0, 0, 0, 0
-    iterator = dataloader
-    if show_progress:
-        desc = f"Evaluating {split_name}" if split_name else "Evaluating"
-        iterator = tqdm(dataloader, desc=desc, leave=False, ncols=80)
-    with torch.no_grad():
-        for gz, tgt in iterator:
-            gz, tgt = gz.to(device), tgt.to(device)
+    if sample_idx is not None:
+        dataset = dataloader.dataset
+        if hasattr(dataset, 'indices'):
+            actual_idx = dataset.indices[sample_idx]
+            gz, tgt, _, _ = dataset.dataset[actual_idx]
+        else:
+            gz, tgt, _, _ = dataset[sample_idx]
+        gz, tgt = gz.unsqueeze(0).to(device), tgt.unsqueeze(0).to(device)
+        with torch.no_grad():
             pred = model(gz)
             pred_denorm = denorm(pred, stats)
             tgt_denorm = denorm(tgt, stats)
             diff = tgt_denorm - pred_denorm
             sum_se += torch.sum(diff * diff).item()
             sum_ae += torch.sum(torch.abs(diff)).item()
-            n_samples += diff.numel()            
+            n_samples += diff.numel()
             true_binary = tgt_denorm > threshold
             pred_binary = pred_denorm > threshold
             intersection += torch.sum(true_binary & pred_binary).item()
             union += torch.sum(true_binary | pred_binary).item()
             true_sum += torch.sum(true_binary).item()
             pred_sum += torch.sum(pred_binary).item()
+    else:
+        iterator = dataloader
+        if show_progress:
+            desc = f"Evaluating {split_name}" if split_name else "Evaluating"
+            iterator = tqdm(dataloader, desc=desc, leave=False, ncols=80)
+        with torch.no_grad():
+            for gz, tgt in iterator:
+                gz, tgt = gz.to(device), tgt.to(device)
+                pred = model(gz)
+                pred_denorm = denorm(pred, stats)
+                tgt_denorm = denorm(tgt, stats)
+                diff = tgt_denorm - pred_denorm
+                sum_se += torch.sum(diff * diff).item()
+                sum_ae += torch.sum(torch.abs(diff)).item()
+                n_samples += diff.numel()            
+                true_binary = tgt_denorm > threshold
+                pred_binary = pred_denorm > threshold
+                intersection += torch.sum(true_binary & pred_binary).item()
+                union += torch.sum(true_binary | pred_binary).item()
+                true_sum += torch.sum(true_binary).item()
+                pred_sum += torch.sum(pred_binary).item()
+    
     rmse_val = (sum_se / n_samples) ** 0.5
     l1_val = sum_ae / n_samples
     iou_val = intersection / union if union > 0 else 1.0
@@ -45,7 +70,7 @@ def eval_metrics_nn(model, dataloader: DataLoader, stats: dict, device: str = "c
         'l1': l1_val,
         'iou': iou_val,
         'dice': dice_val,
-        'n_samples': len(dataloader.dataset)
+        'n_samples': 1 if sample_idx is not None else len(dataloader.dataset)
     }
 
 def eval_metrics_bayesian(dataloader: DataLoader, stats: dict, threshold=0.1, split_name="", show_progress=False, max_samples=None):
@@ -122,9 +147,10 @@ def eval_metrics_bayesian(dataloader: DataLoader, stats: dict, threshold=0.1, sp
     }
 
 def evaluate_model(method: str = "nn", model_path: str = None, dataset_name: str = None, 
-                   threshold: float = 0.1, batch_size: int = None, device: str = "cpu", max_samples: int = None):
+                   threshold: float = 0.1, batch_size: int = None, device: str = "cpu", max_samples: int = None, sample_idx: int = None):
     """
     Evaluate either a neural network model or Bayesian inversion on validation and training data.
+    If sample_idx is provided, evaluates only that specific sample.
     """
     if batch_size is None:
         batch_size = 8 if method == "nn" else 1
@@ -135,8 +161,11 @@ def evaluate_model(method: str = "nn", model_path: str = None, dataset_name: str
         net, device = load_model(model_path, torch.device(device))
         print("\nEvaluating neural network model performance...")
         results = {}
-        results['train'] = eval_metrics_nn(net, tr_ld, stats, device, threshold, "training", show_progress=True)
-        results['validation'] = eval_metrics_nn(net, va_ld, stats, device, threshold, "validation", show_progress=True)
+        if sample_idx is not None:
+            results['sample'] = eval_metrics_nn(net, va_ld, stats, device, threshold, f"sample {sample_idx}", show_progress=True, sample_idx=sample_idx)
+        else:
+            results['train'] = eval_metrics_nn(net, tr_ld, stats, device, threshold, "training", show_progress=True)
+            results['validation'] = eval_metrics_nn(net, va_ld, stats, device, threshold, "validation", show_progress=True)
     elif method == "bayesian":
         print("\nEvaluating Bayesian inversion performance...")
         results = {}
@@ -167,20 +196,21 @@ def main():
     Main function to run evaluation. By default runs neural network evaluation.
     Change method parameter to "bayesian" to run Bayesian evaluation.
     """
-    # results = evaluate_model(
-    #     method="nn",
-    #     model_path='models/single_block.pt',
-    #     dataset_name='single_block',
-    #     threshold=0.1,
-    #     batch_size=8,
-    #     device="cuda:7"
-    # )
     results = evaluate_model(
-        method="bayesian",
+        method="nn",
+        model_path='models/single_block.pt',
         dataset_name='single_block',
         threshold=0.5,
-        max_samples=1
+        batch_size=8,
+        device="cuda:7",
+        sample_idx=3
     )
+    # results = evaluate_model(
+    #     method="bayesian",
+    #     dataset_name='single_block',
+    #     threshold=0.5,
+    #     max_samples=1
+    # )
     print_results(results)
 
 if __name__ == "__main__":
