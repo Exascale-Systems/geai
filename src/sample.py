@@ -88,12 +88,12 @@ def sample_bayesian(data_path: str = "data/single_block.h5", split_path: str = "
     # )
     # Gauss-Newton (Hessian Search)
     opt = optimization.ProjectedGNCG(
-        maxIter=10, lower=-1.0, upper=1.0, maxIterLS=20, maxIterCG=10, tolCG=1e-3
+        maxIter=10, lower=-1.0, upper=1.0, maxIterLS=20, cg_maxiter=10, cg_atol=1e-3
     )
     inv_prob = inverse_problem.BaseInvProblem(dmis, reg, opt)
     starting_beta = directives.BetaEstimate_ByEig(beta0_ratio=1e1)
     beta_schedule = directives.BetaSchedule(coolingFactor=5, coolingRate=1)
-    save_iteration = directives.SaveOutputEveryIteration(save_txt=False)
+    save_iteration = directives.SaveOutputEveryIteration(on_disk=False)
     update_jacobi = directives.UpdatePreconditioner()
     target_misfit = directives.TargetMisfit(chifact=1)
     sensitivity_weights = directives.UpdateSensitivityWeights(every_iteration=False)
@@ -124,4 +124,4 @@ if __name__ == "__main__":
     # sample_nn(data_path="data/single_block.h5", split_path="splits/single_block.npz", accuracy=0.01, confidence=0.95,
     #           split="val", idx=3, model_path="models/single_block.pt", threshold=0.5)
     sample_bayesian(data_path="data/single_block.h5", split_path="splits/single_block.npz",
-                    split="val", idx=3, threshold=0.5)
+                    split="val", idx=4, threshold=0.5)

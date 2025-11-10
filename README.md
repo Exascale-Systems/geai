@@ -103,7 +103,10 @@ The generation of this dataset relies on a [forked version](https://github.com/k
     - Deeplearning (no, medium, high)
     - SIMPEG
 - scalar vs vector measurement
+- StructuralGeo dataset
 ------
+- consolidate metrics.py, gen.py, StructuralGeo_gen.py, utils.py
+- consolidate eval.py, sample.py
 - refactor plot.py
 - nn.py
     - dropout
@@ -112,7 +115,6 @@ The generation of this dataset relies on a [forked version](https://github.com/k
     - 3D --> 3D UNET?
     - multi-sensor fusion
         - Ablation study
-- StructuralGeo dataset
 - multi gpu
 - confidence
 
@@ -134,6 +136,7 @@ The generation of this dataset relies on a [forked version](https://github.com/k
         - *feature map visualization
 - figure out gal/sqrt(Hz)
 - heavy refactor
+- SIMPEG eval.py
 
 ## Open Questions
 ### Geology
