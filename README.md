@@ -89,14 +89,8 @@ The generation of this dataset relies on a [forked version](https://github.com/k
 3. How to improve predictions?
 
 ## To-do
-- refactor evaluate, inspect, train
-- refactor plot.py / inspect.py
-- noise vs error (l1, rmse, iou)
-    - Deeplearning (no, medium, high)
-    - SIMPEG
 - train.py
     - normalization
-        - mean of zero, std deviation
     - loss function
     - data augmentation
         - noise
@@ -105,19 +99,22 @@ The generation of this dataset relies on a [forked version](https://github.com/k
     - weight decay
     - learning Rate
     - batch size
-    - dropout
-- determine figure of merit (CG-5 vs Exail)
+- noise vs error (l1, rmse, iou, dice)
+    - Deeplearning (no, medium, high)
+    - SIMPEG
 - scalar vs vector measurement
 ------
-- refactor gen/*
+- refactor plot.py
 - nn.py
+    - dropout
     - skip modules
     - attention
     - 3D --> 3D UNET?
     - multi-sensor fusion
         - Ablation study
-- confidence
+- StructuralGeo dataset
 - multi gpu
+- confidence
 
 ## Completed
 - inspect.py / plot.py
@@ -136,6 +133,7 @@ The generation of this dataset relies on a [forked version](https://github.com/k
         - weight histogram drift
         - *feature map visualization
 - figure out gal/sqrt(Hz)
+- heavy refactor
 
 ## Open Questions
 ### Geology
