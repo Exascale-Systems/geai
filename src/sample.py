@@ -14,36 +14,29 @@ from src.data import data_prep
 from simpeg.potential_fields import gravity
 from simpeg import data, inverse_problem, regularization, optimization, directives, inversion, data_misfit
 
-@torch.no_grad()
-def inspect_prediction(sample: dict, net: torch.nn.Module, device: torch.device, shape_cells: tuple, stats: dict, accuracy: float=0.01, 
-                       confidence: float=0.95):
-    """
-    Forward pass (Evaluate) sample and return prediction and input x with same shape as y.
-    """
-    net.eval()
-    x, _, _, _ = make_transform(shape_cells, stats, (accuracy, confidence))(sample)
-    y = denorm(net(x.unsqueeze(0).to(device))[0].permute(2,1,0).reshape(-1), stats, data_type="rho").cpu().numpy()    
-    x = denorm(x.squeeze(), stats, data_type="gz").cpu().numpy().flatten()
-    return y, x
-
 def sample_nn(data_path: str = "single_block", split_path: str = "single_block", accuracy: float = 0.01, confidence: float = 0.95,
-              split: str = "val", idx: int = idx, model_path: str = "models/single_block.pt", threshold: float = threshold, device: torch.device = device):
+              split: str = "va", idx: int = idx, model_path: str = "models/single_block.pt", threshold: float = threshold, device: torch.device = device):
     """
     Neural network prediction sampling.
     """
-    tr_ld, va_ld, stats = data_prep(data_path, split_path, 1, load_splits=True, transform=False)
+    tr_ld, va_ld, stats = data_prep(data_path, split_path, 1, load_splits=True, transform=True, accuracy=accuracy, confidence=confidence)
     ds = va_ld.dataset if split == "va" else tr_ld.dataset
-    sample_data = ds[idx]
+    net, device = load_model(model_path, device)
+    net.eval()
+    with torch.no_grad():
+        x, _, _, _ = ds[idx]
+        y = denorm(net(x.unsqueeze(0).to(device))[0].permute(2,1,0).reshape(-1), stats, data_type="rho").cpu().numpy()    
+        x = denorm(x.squeeze(), stats, data_type="gz").cpu().numpy().flatten()
+        pred = y
+    ds.dataset.transform = None
+    g_idx = ds.indices[idx]
+    sample_data = ds.dataset[g_idx]
     rx, gz = sample_data['receiver_locations'].cpu().numpy(), sample_data['gz'].cpu().numpy()
     ind = sample_data['ind_active'].cpu().numpy().astype(bool)
     true = np.zeros_like(ind, float)
     true[ind] = sample_data['true_model'].cpu().numpy()
     nx, ny, nz = map(int, ds.dataset.shape_cells)
     mesh = create_mesh(bounds=((0, nx*ds.dataset.hx[0]), (0, ny*ds.dataset.hy[0]), (0, nz*ds.dataset.hz[0])), resolution=(nx, ny, nz))
-    shape = (nx, ny, nz)
-    sample = sample_data
-    net, device = load_model(model_path, device)
-    pred, x = inspect_prediction(sample, net, device, shape, stats, accuracy, confidence)
     _, survey = gravity_survey(rx, components=("gz",))
     _, _, model_map, _ = init_model(mesh, rx, 0)
     sim = gravity.simulation.Simulation3DIntegral(
@@ -72,7 +65,7 @@ def sample_bayesian(data_path: str = "data/single_block.h5", split_path: str = "
     Bayesian inversion (SIMPEG) sampling.
     """
     dataset_name = data_path.split('/')[-1].replace('.h5', '')
-    tr_ld, va_ld, stats = data_prep(dataset_name, dataset_name, 1, load_splits=True, transform=False)
+    tr_ld, va_ld, stats = data_prep(dataset_name, dataset_name, 1, load_splits=True, transform=True)
     ds = va_ld.dataset if split == "va" else tr_ld.dataset
     sample_data = ds[idx]
     rx, gz = sample_data['receiver_locations'].cpu().numpy(), sample_data['gz'].cpu().numpy()
@@ -139,7 +132,7 @@ def sample_bayesian(data_path: str = "data/single_block.h5", split_path: str = "
     print(f"Dice: {dice:.3f}")
 
 if __name__ == "__main__":
-    # sample_nn(data_path="single_block", split_path="single_block", accuracy=0.01, confidence=0.95,
-    #           split="va", idx=3, model_path="models/single_block.pt", threshold=0.5)
-    sample_bayesian(data_path="single_block", split_path="single_block",
-                    split="va", idx=3, threshold=0.5)
+    sample_nn(data_path="single_block", split_path="single_block", accuracy=0.01, confidence=0.95,
+              split="va", idx=3, model_path="models/single_block.pt", threshold=0.5)
+    # sample_bayesian(data_path="single_block", split_path="single_block",
+    #                 split="va", idx=3, threshold=0.5)

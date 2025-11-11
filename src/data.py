@@ -62,7 +62,7 @@ def collate(b):
     xs, ys = zip(*[(x,y) for x,y,_,_ in b])
     return torch.stack(xs), torch.stack(ys)
 
-def data_prep(ds_name: dict, split_name: dict, bs: int, load_splits: bool = False, transform: bool = True):
+def data_prep(ds_name: dict, split_name: dict, bs: int, load_splits: bool = False, transform: bool = True, accuracy: float = 0.01, confidence: float = 0.95):
     """
     return training dataset, validation dataset, and stats required for normalization.
     
@@ -75,7 +75,7 @@ def data_prep(ds_name: dict, split_name: dict, bs: int, load_splits: bool = Fals
     stats = compute_stats(f"data/{ds_name}.h5")                     # calculate distribution of data
     ds = MasterDataset(f"data/{ds_name}.h5")                        # load dataset
     if transform:
-        ds.transform = make_transform(ds.shape_cells, stats, noise=(0,1))   
+        ds.transform = make_transform(ds.shape_cells, stats, noise=(accuracy, confidence))   
     else:
         ds.transform = None
     if load_splits and Path(f"splits/{split_name}.npz").exists():
@@ -117,6 +117,6 @@ def make_transform(shape_cells, stats, noise=(0, 0)):
         y = tm.to(dtype=torch.float32, device=dev).reshape(nx, ny, nz).permute(2, 1, 0).contiguous()
         m = torch.as_tensor(sample["ind_active"]).to(device=dev).reshape(nx, ny, nz).permute(2, 1, 0).contiguous().to(torch.bool)
         return x, y, m, sample["seed"]
-
+    
     return to_tensors
 
