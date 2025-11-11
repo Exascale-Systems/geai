@@ -9,30 +9,10 @@ from src.data import make_transform
 from src.utils import denorm
 from src.plot import *
 from src.gen.StructuralGeo_gen import create_mesh
-from src.utils import load_model
+from src.utils import load_model, rmse, l1, iou_dice
 from src.data import data_prep
 from simpeg.potential_fields import gravity
 from simpeg import data, inverse_problem, regularization, optimization, directives, inversion, data_misfit
-
-def rmse(true: np.ndarray, pred: np.ndarray):
-    """Return RMSE (g/cc)"""
-    return np.sqrt(np.mean((true - pred) ** 2))
-
-def l1(true: np.ndarray, pred: np.ndarray):
-    """Return L1 error (g/cc)"""
-    return np.mean(np.abs(true - pred))
-
-def iou_dice(true: np.ndarray, pred: np.ndarray, threshold: float):
-    """Return IoU & Dice coefficient"""
-    true_binary = true > threshold
-    pred_binary = pred > threshold
-    intersection = np.sum(true_binary & pred_binary)
-    union = np.sum(true_binary | pred_binary)
-    true_sum = np.sum(true_binary)
-    pred_sum = np.sum(pred_binary)
-    iou = intersection / union if union > 0 else 1.0
-    dice = (2 * intersection) / (true_sum + pred_sum) if (true_sum + pred_sum) > 0 else 1.0
-    return iou, dice
 
 @torch.no_grad()
 def inspect_prediction(sample: dict, net: torch.nn.Module, device: torch.device, shape_cells: tuple, stats: dict, accuracy: float=0.01, 

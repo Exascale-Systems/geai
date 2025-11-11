@@ -5,17 +5,13 @@ batch_size = 8
 max_epochs = 200
 eval_interval = 10
 
-import pathlib
 from tqdm.auto import tqdm
-import numpy as np
 import torch, torch.nn as nn
-from torch.utils.data import DataLoader, random_split
+from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
-from src.data import MasterDataset, collate, _worker_init_fn, data_prep
-from src.utils import compute_stats, denorm
-from src.data import make_transform
-from src.metrics import eval_metrics
-from model import GravInvNet
+from src.data import data_prep
+from src.eval import eval_metrics_nn
+from src.model import GravInvNet
 
 dev = torch.device(device); print(dev)
 net = GravInvNet().to(dev)
@@ -62,7 +58,7 @@ def train(tr_ld: DataLoader, va_ld: DataLoader, E=max_epochs, min_loss=1e-5, sta
         writer.add_scalar("Hyperparams/LR", lr, e)
         writer.add_scalar("Hyperparams/WeightDecay", wd, e)
         if e % eval_interval == 0:
-            metrics = eval_metrics(net, va_ld, stats, dev)
+            metrics = eval_metrics_nn(net, va_ld, stats, dev)
             writer.add_scalar("Metrics/RMSE", metrics['rmse'], e)
             writer.add_scalar("Metrics/L1", metrics['l1'], e)
             writer.add_scalar("Metrics/IoU", metrics['iou'], e)

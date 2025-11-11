@@ -4,8 +4,7 @@ import torch
 from torch.utils.data import DataLoader
 from src.data import data_prep
 from src.gen.StructuralGeo_gen import gravity_survey, init_model, create_mesh
-from src.utils import denorm
-from src.utils import load_model
+from src.utils import denorm, load_model
 from simpeg.potential_fields import gravity
 from simpeg import data, inverse_problem, regularization, optimization, directives, inversion, data_misfit
 
