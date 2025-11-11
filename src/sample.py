@@ -23,11 +23,30 @@ def sample_nn(data_path: str = "single_block", split_path: str = "single_block",
     ds = va_ld.dataset if split == "va" else tr_ld.dataset
     net, device = load_model(model_path, device)
     net.eval()
+    sum_se, sum_ae, n_samples = 0.0, 0.0, 0
+    intersection, union, true_sum, pred_sum = 0, 0, 0, 0
     with torch.no_grad():
-        x, _, _, _ = ds[idx]
-        y = denorm(net(x.unsqueeze(0).to(device))[0].permute(2,1,0).reshape(-1), stats, data_type="rho").cpu().numpy()    
-        x = denorm(x.squeeze(), stats, data_type="gz").cpu().numpy().flatten()
-        pred = y
+        x, tgt, _, _ = ds[idx]
+        gz, tgt = x.unsqueeze(0).to(device), tgt.unsqueeze(0).to(device)
+        pred = net(gz)
+        pred_denorm = denorm(pred, stats)
+        tgt_denorm = denorm(tgt, stats)
+        diff = tgt_denorm - pred_denorm
+        sum_se += torch.sum(diff * diff).item()
+        sum_ae += torch.sum(torch.abs(diff)).item()
+        n_samples += diff.numel()
+        true_binary = tgt_denorm > threshold
+        pred_binary = pred_denorm > threshold
+        intersection += torch.sum(true_binary & pred_binary).item()
+        union += torch.sum(true_binary | pred_binary).item()
+        true_sum += torch.sum(true_binary).item()
+        pred_sum += torch.sum(pred_binary).item()
+        rmse_val = (sum_se / n_samples) ** 0.5
+        l1_val = sum_ae / n_samples
+        iou_val = intersection / union if union > 0 else 1.0
+        dice_val = (2 * intersection) / (true_sum + pred_sum) if (true_sum + pred_sum) > 0 else 1.0
+    x = denorm(x.squeeze(), stats, data_type="gz").cpu().numpy().flatten() 
+    pred = denorm(pred[0].permute(2,1,0).reshape(-1), stats, data_type="rho").cpu().numpy()    
     ds.dataset.transform = None
     g_idx = ds.indices[idx]
     sample_data = ds.dataset[g_idx]
@@ -47,17 +66,16 @@ def sample_nn(data_path: str = "single_block", split_path: str = "single_block",
         engine="choclo",
     )
     x_ = sim.dpred(pred)
-    iou, dice = iou_dice(true, pred, threshold)
     plot_gravity_measurements(rx, gz, title="True Gravity Data (gz)")
     plot_density_contrast_3D(mesh, ind, true)
     plot_gravity_measurements(rx, x, title="Input Gravity Data (x)")
     plot_density_contrast_3D(mesh, ind, pred)
     plot_gravity_measurements(rx, x_, title="Predicted Gravity Data (y)")
     input("Press Enter to close plots...")
-    print(f"RMSE: {rmse(true, pred):.4f}")
-    print(f"L1: {l1(true, pred):.4f}")
-    print(f"IoU: {iou:.3f}")
-    print(f"Dice: {dice:.3f}")
+    print(f"RMSE: {rmse_val:.4f}")
+    print(f"L1: {l1_val:.4f}")
+    print(f"IoU: {iou_val:.3f}")
+    print(f"Dice: {dice_val:.3f}")
 
 def sample_bayesian(data_path: str = "data/single_block.h5", split_path: str = "splits/single_block.npz", 
               split: str = "val", idx: int = idx, threshold: float = threshold):
