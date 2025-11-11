@@ -14,6 +14,20 @@ def load_model(model_path, device="cpu"):
     model.eval()
     return model, device
 
+def add_noise(shape, accuracy, confidence=0.95, seed=0):
+    """
+    Simulate measurement uncertainty by adding Gaussian noise to data. 
+    Eg. gravimeter accuracy is 0.1 mGal with 95% confidence.
+    """
+    from scipy.stats import norm
+    rng = np.random.default_rng(seed)
+    z = (1.0 + confidence) / 2.0
+    # Clamp z to avoid numerical issues at extremes
+    z = np.clip(z, 1e-10, 1 - 1e-10)
+    ppf_z = norm.ppf(z)
+    sigma = accuracy / ppf_z
+    return rng.normal(0.0, sigma, size=shape)
+
 def compute_stats(h5_path):
     gz_min, gz_max, rho_min, rho_max = math.inf, -math.inf, math.inf, -math.inf
     with h5py.File(h5_path, "r") as f:

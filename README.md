@@ -89,7 +89,6 @@ The generation of this dataset relies on a [forked version](https://github.com/k
 3. How to improve predictions?
 
 ## To-do
-- consolidate/refactor metrics.py, eval.py, sample.py, data.py
 - train.py
     - normalization
     - loss function
@@ -137,6 +136,7 @@ The generation of this dataset relies on a [forked version](https://github.com/k
 - figure out gal/sqrt(Hz)
 - heavy refactor
 - SIMPEG eval.py
+- consolidate/refactor metrics.py, eval.py, sample.py, data.py
 
 ## Open Questions
 ### Geology

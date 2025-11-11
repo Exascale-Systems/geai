@@ -19,11 +19,11 @@ def eval_metrics_nn(model, dataloader: DataLoader, stats: dict, device: str = "c
     intersection, union, true_sum, pred_sum = 0, 0, 0, 0
     if sample_idx is not None:
         dataset = dataloader.dataset
-        if hasattr(dataset, 'indices'):
-            actual_idx = dataset.indices[sample_idx]
-            gz, tgt, _, _ = dataset.dataset[actual_idx]
-        else:
-            gz, tgt, _, _ = dataset[sample_idx]
+        # if hasattr(dataset, 'indices'):
+        #     actual_idx = dataset.indices[sample_idx]
+        #     gz, tgt, _, _ = dataset.dataset[actual_idx]
+        # else:
+        gz, tgt, _, _ = dataset[sample_idx]
         gz, tgt = gz.unsqueeze(0).to(device), tgt.unsqueeze(0).to(device)
         with torch.no_grad():
             pred = model(gz)
@@ -60,7 +60,6 @@ def eval_metrics_nn(model, dataloader: DataLoader, stats: dict, device: str = "c
                 union += torch.sum(true_binary | pred_binary).item()
                 true_sum += torch.sum(true_binary).item()
                 pred_sum += torch.sum(pred_binary).item()
-    
     rmse_val = (sum_se / n_samples) ** 0.5
     l1_val = sum_ae / n_samples
     iou_val = intersection / union if union > 0 else 1.0
@@ -154,7 +153,7 @@ def evaluate_model(method: str = "nn", model_path: str = None, dataset_name: str
     """
     if batch_size is None:
         batch_size = 8 if method == "nn" else 1
-    tr_ld, va_ld, stats = data_prep(dataset_name, dataset_name, batch_size, load_splits=True)
+    tr_ld, va_ld,  stats = data_prep(dataset_name, dataset_name, batch_size, load_splits=True)
     if method == "nn":
         if model_path is None:
             raise ValueError("model_path is required for neural network evaluation")
@@ -169,7 +168,7 @@ def evaluate_model(method: str = "nn", model_path: str = None, dataset_name: str
     elif method == "bayesian":
         print("\nEvaluating Bayesian inversion performance...")
         results = {}
-        # results['train'] = eval_metrics_bayesian(tr_ld, stats, threshold, "training", show_progress=True, max_samples=max_samples or 5)
+        results['train'] = eval_metrics_bayesian(tr_ld, stats, threshold, "training", show_progress=True, max_samples=max_samples or 5)
         results['validation'] = eval_metrics_bayesian(va_ld, stats, threshold, "validation", show_progress=True, max_samples=max_samples or 5)
     else:
         raise ValueError(f"Unknown method: {method}. Use 'nn' or 'bayesian'")

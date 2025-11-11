@@ -90,7 +90,7 @@ def data_prep(ds_name: dict, split_name: dict, bs: int, load_splits: bool = Fals
         np.savez(f"splits/{split_name}.npz", tr=np.array(tr_ds.indices), va=np.array(va_ds.indices))
     tr_ld = DataLoader(tr_ds,batch_size=bs,shuffle=True,num_workers=2,worker_init_fn=_worker_init_fn,collate_fn=collate, pin_memory=True)
     va_ld = DataLoader(va_ds,batch_size=bs,shuffle=False,num_workers=2,worker_init_fn=_worker_init_fn,collate_fn=collate, pin_memory=True)
-    return tr_ds, va_ds, tr_ld, va_ld, stats
+    return tr_ld, va_ld, stats
 
 def make_transform(shape_cells, stats, noise=(0, 0)):
     """

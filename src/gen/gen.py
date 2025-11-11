@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.interpolate import LinearNDInterpolator
-from scipy.stats import norm
+from src.utils import add_noise
 from discretize import TensorMesh
 from discretize.utils import active_from_xyz
 from simpeg import maps
@@ -122,16 +122,6 @@ def gravity_survey(
     return receiver_locations, survey
 
 
-def add_noise(shape, accuracy, confidence=0.95, seed=0):
-    """
-    Simulate measurement uncertainty by adding Gaussian noise to data. 
-
-    Eg. gravimeter accuracy is 0.1 mGal with 95% confidence.
-    """
-    rng = np.random.default_rng(seed)
-    z = (1.0 + confidence) / 2.0
-    sigma = accuracy / norm.ppf(z)
-    return rng.normal(0.0, sigma, size=shape)
 
 def main():
     topo_xyz = create_topo()

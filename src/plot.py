@@ -207,22 +207,11 @@ def plot_density_slice_residuals(mesh, ind_active, density_true, density_pred, s
         p.subplot(0, i)
         residual_slice, true_slice, pred_slice, (X, Y), slice_title, xlabel, ylabel = slice_configs[slice_type.lower()](idx)
         pts = np.column_stack([X.ravel(), Y.ravel(), np.zeros(X.size)])
-        from src.metrics import rmse, l1, iou_dice
-        active_mask = (true_slice != 0) | (pred_slice != 0)
-        if np.any(active_mask):
-            true_active, pred_active = true_slice[active_mask], pred_slice[active_mask]
-            mse, l1_val = rmse(true_active, pred_active) ** 2, l1(true_active, pred_active)
-            iou, dice = iou_dice(true_slice, pred_slice, 0.1)
-        else:
-            mse = l1_val = 0.0
-            iou = dice = 1.0
-        
         surf = pv.PolyData(pts).delaunay_2d()
         surf["residuals"] = residual_slice.ravel()
         v_max = float(np.max(np.abs(residual_slice))) if np.any(residual_slice != 0) else 1.0
         scalar_bar_args = {"title": "Residuals (g/cc)", "vertical": True, "position_x": 0.90, "position_y": 0.15, "width": 0.04, "height": 0.7, "label_font_size": 14}
         p.add_mesh(surf, scalars="residuals", cmap=cmap, clim=(-v_max, v_max), scalar_bar_args=scalar_bar_args)
-        p.add_text(f"MSE: {mse:.4f}\nL1: {l1_val:.4f}\nIoU: {iou:.3f}\nDice: {dice:.3f}", position="lower_right", font_size=10)
         p.add_text(slice_title, position="upper_edge", font_size=12)
         p.show_bounds(grid="front", xtitle=xlabel, ytitle=ylabel)
         p.enable_parallel_projection()
