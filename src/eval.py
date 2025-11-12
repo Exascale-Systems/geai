@@ -2,6 +2,7 @@ import numpy as np
 from scipy.stats import norm
 import torch
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 from src.gen.StructuralGeo_gen import gravity_survey, init_model
 from src.plot import *
 from src.gen.StructuralGeo_gen import create_mesh
@@ -10,7 +11,7 @@ from src.data import data_prep
 from simpeg.potential_fields import gravity
 from simpeg import data, inverse_problem, regularization, optimization, directives, inversion, data_misfit
 
-def eval_nn(net: torch.nn.Module, dl: torch.utils.data.DataLoader, ds: torch.utils.data.Dataset,  
+def eval_nn(net: torch.nn.Module, dl: torch.utils.data.DataLoader,  
               stats: dict, device: torch.device, idx: int = None, threshold: float = 0.1):
     """
     Neural network prediction sampling.
@@ -19,7 +20,7 @@ def eval_nn(net: torch.nn.Module, dl: torch.utils.data.DataLoader, ds: torch.uti
     metrics = TorchMetrics(stats, threshold)
     with torch.no_grad():
         if idx is None:
-            desc = f"Evaluating {split_name}"   
+            desc = f"Evaluating NN"   
             iterator = tqdm(dl, desc=desc, leave=False, ncols=80)
             for x, true_y in iterator:
                 x, true_y = x.to(device), true_y.to(device)
@@ -27,14 +28,15 @@ def eval_nn(net: torch.nn.Module, dl: torch.utils.data.DataLoader, ds: torch.uti
             results = metrics.compute()
             rmse_val, l1_val, iou_val, dice_val = results["RMSE"], results["L1"], results["IoU"], results["Dice"]
         else:
+            ds = dl.dataset
             x, true_y, _, _ = ds[idx]
             x, true_y = x.unsqueeze(0).to(device), true_y.unsqueeze(0).to(device)
             metrics.update(net, x, true_y, denorm)
             results = metrics.compute()
             rmse_val, l1_val, iou_val, dice_val = results["RMSE"], results["L1"], results["IoU"], results["Dice"]
             pred_y = net(x)
-            x = denorm(x.squeeze(), stats, data_type="gz").cpu().numpy().flatten() 
-            pred_y = denorm(pred_y[0].permute(2,1,0).reshape(-1), stats, data_type="rho").cpu().numpy()    
+            x = denorm(x.squeeze(), stats, data_type="gz").cpu().numpy().flatten(order="F") 
+            pred_y = denorm(pred_y[0].permute(2,1,0).reshape(-1), stats, data_type="rho").cpu().numpy().flatten(order="F")
             ds.dataset.transform = None
             g_idx = ds.indices[idx]
             sample_data = ds.dataset[g_idx]
@@ -68,9 +70,9 @@ def eval_nn(net: torch.nn.Module, dl: torch.utils.data.DataLoader, ds: torch.uti
         'n_samples': 1 if idx is not None else len(dl.dataset)
     }
 
-def eval_bayesian(dl: torch.utils.data.DataLoader, ds: torch.utils.data.Dataset, 
-                    idx: int = None, threshold: float = 0.1, max_samples: int = None, 
-                    accuracy: float = 0.001, confidence: float = 0.95):
+def eval_bayesian(dl: torch.utils.data.DataLoader, stats: dict, 
+                  idx: int = None, threshold: float = 0.1, max_samples: int = None,
+                  accuracy: float = 0.001, confidence: float = 0.95):
     """
     Bayesian inversion (SIMPEG) sampling.
     """
@@ -85,29 +87,27 @@ def eval_bayesian(dl: torch.utils.data.DataLoader, ds: torch.utils.data.Dataset,
         for local_idx, (x, true_y) in enumerate(iterator):
             if max_samples is not None and local_idx >= max_samples:
                 break
-            x = x.squeeze(0).cpu().numpy().flatten()
-            true_y = true_y.squeeze(0).cpu().numpy().flatten()
-            dataset = dl.dataset.dataset
-            dataset.transform = None
+            x = denorm(x.squeeze(0), stats, "gz").cpu().numpy().flatten()
+            true_y = denorm(true_y.squeeze(0), stats, "rho").cpu().numpy().flatten(order="F")
+            ds = dl.dataset.dataset
+            ds.transform = None
             g_idx = dl.dataset.indices[local_idx]
-            sample_data = dataset[g_idx]
+            sample_data = ds[g_idx]
             rx, true_x = sample_data['receiver_locations'].cpu().numpy(), sample_data['gz'].cpu().numpy()
             ind = sample_data['ind_active'].cpu().numpy().astype(bool)
-            mesh = create_mesh(bounds=((0, dataset.shape_cells[0]*dataset.hx[0]), 
-                                    (0, dataset.shape_cells[1]*dataset.hy[0]), 
-                                    (0, dataset.shape_cells[2]*dataset.hz[0])), 
-                            resolution=dataset.shape_cells)
+            mesh = create_mesh(bounds=((0, ds.shape_cells[0]*ds.hx[0]), 
+                                    (0, ds.shape_cells[1]*ds.hy[0]), 
+                                    (0, ds.shape_cells[2]*ds.hz[0])), 
+                            resolution=ds.shape_cells)
             _, survey = gravity_survey(rx, components=("gz",))
             _, _, model_map, _ = init_model(mesh, rx, 0)
-            y = np.zeros(int(ind.sum()))
             sim = gravity.simulation.Simulation3DIntegral(
                 survey=survey, mesh=mesh, rhoMap=model_map, active_cells=ind, engine="choclo"
                 )
             data_object = data.Data(survey, dobs=x, noise_floor=sigma)
             dmis = data_misfit.L2DataMisfit(data=data_object, simulation=sim) # L2 Norm: ||W(d_pred(m) - d_obs)||^2
             reg = regularization.WeightedLeastSquares(mesh, active_cells=ind, mapping=model_map) # Tikhonov regularization (smooths it out)
-            # # Sparse (IRLS) regulatization (encourages sharp features) <-- more realistic
-            # reg = regularization.Sparse(mesh, active_cells=ind, mapping=model_map)
+            # reg = regularization.Sparse(mesh, active_cells=ind, mapping=model_map) # Sparse (IRLS) regulatization (encourages sharp features)
             # reg.norms = [0, 2, 2, 2]
             # update_IRLS = directives.UpdateIRLS(
             #     f_min_change=1e-4,
@@ -132,24 +132,24 @@ def eval_bayesian(dl: torch.utils.data.DataLoader, ds: torch.utils.data.Dataset,
                 target_misfit, # comment out for IRLS
             ]
             inv = inversion.BaseInversion(inv_prob, directives_list)
+            y = np.zeros(int(ind.sum()))
             pred_y = inv.run(y)
+            pred_y = denorm(torch.from_numpy(pred_y), stats, "rho").numpy()
             metrics.update(true_y, pred_y)
     else:
         x, true_y, _, _ = dl.dataset[idx]
-        x = x.squeeze(0).cpu().numpy().flatten()
-        true_y = true_y.squeeze(0).cpu().numpy().flatten()
-        dataset = dl.dataset.dataset
-        original_transform = dataset.transform
-        dataset.transform = None
+        x = denorm(x.squeeze(0), stats, "gz").cpu().numpy().flatten()
+        true_y = denorm(true_y.squeeze(0), stats, "rho").cpu().numpy().flatten(order="F")
+        ds = dl.dataset.dataset
+        ds.transform = None
         g_idx = dl.dataset.indices[idx]
-        sample_data = dataset[g_idx]
-        dataset.transform = original_transform
+        sample_data = ds[g_idx]
         rx, true_x = sample_data['receiver_locations'].cpu().numpy(), sample_data['gz'].cpu().numpy()
         ind = sample_data['ind_active'].cpu().numpy().astype(bool)
-        mesh = create_mesh(bounds=((0, dataset.shape_cells[0]*dataset.hx[0]), 
-                                (0, dataset.shape_cells[1]*dataset.hy[0]), 
-                                (0, dataset.shape_cells[2]*dataset.hz[0])), 
-                        resolution=dataset.shape_cells)
+        mesh = create_mesh(bounds=((0, ds.shape_cells[0]*ds.hx[0]), 
+                                (0, ds.shape_cells[1]*ds.hy[0]), 
+                                (0, ds.shape_cells[2]*ds.hz[0])), 
+                        resolution=ds.shape_cells)
         _, survey = gravity_survey(rx, components=("gz",))
         _, _, model_map, _ = init_model(mesh, rx, 0)
         y = np.zeros(int(ind.sum()))
@@ -159,8 +159,7 @@ def eval_bayesian(dl: torch.utils.data.DataLoader, ds: torch.utils.data.Dataset,
         data_object = data.Data(survey, dobs=x, noise_floor=sigma)
         dmis = data_misfit.L2DataMisfit(data=data_object, simulation=sim) # L2 Norm: ||W(d_pred(m) - d_obs)||^2
         reg = regularization.WeightedLeastSquares(mesh, active_cells=ind, mapping=model_map) # Tikhonov regularization (smooths it out)
-        # # Sparse (IRLS) regulatization (encourages sharp features) <-- more realistic
-        # reg = regularization.Sparse(mesh, active_cells=ind, mapping=model_map)
+        # reg = regularization.Sparse(mesh, active_cells=ind, mapping=model_map) # Sparse (IRLS) regulatization (encourages sharp features)
         # reg.norms = [0, 2, 2, 2]
         # update_IRLS = directives.UpdateIRLS(
         #     f_min_change=1e-4,
@@ -168,7 +167,7 @@ def eval_bayesian(dl: torch.utils.data.DataLoader, ds: torch.utils.data.Dataset,
         #     irls_cooling_factor=1.5,
         #     misfit_tolerance=1e-2,
         # )
-        opt = optimization.ProjectedGNCG(maxIter=10, lower=-1.0, upper=1.0, maxIterLS=20, cg_maxiter=10, cg_atol=1e-3) # Gauss-Newton (Hessian Search)
+        opt = optimization.ProjectedGNCG(maxIter=50, maxIterLS=20, cg_maxiter=10, cg_atol=1e-4) # Gauss-Newton (Hessian Search)
         inv_prob = inverse_problem.BaseInvProblem(dmis, reg, opt)
         starting_beta = directives.BetaEstimate_ByEig(beta0_ratio=1e1)
         beta_schedule = directives.BetaSchedule(coolingFactor=5, coolingRate=1)
@@ -193,6 +192,10 @@ def eval_bayesian(dl: torch.utils.data.DataLoader, ds: torch.utils.data.Dataset,
         plot_gravity_measurements(rx, x, title="Input Gravity Data (x)")
         plot_density_contrast_3D(mesh, ind, pred_y)
         plot_gravity_measurements(rx, preq_x, title="Predicted Gravity Data (y)")
+        # plt.hist(true_y, bins=50, alpha=0.5, label="True")
+        # plt.hist(pred_y, bins=50, alpha=0.5, label="Predicted")
+        # plt.legend()
+        # plt.show()
         input("Press Enter to close plots...")
     results = metrics.compute()
     rmse_val, l1_val, iou_val, dice_val = results["RMSE"], results["L1"], results["IoU"], results["Dice"]
@@ -204,10 +207,25 @@ def eval_bayesian(dl: torch.utils.data.DataLoader, ds: torch.utils.data.Dataset,
         'n_samples': 1 if idx is not None else len(dl.dataset)
     }
 
+def eval(eval: str = "nn", split: str = "va", bs: int = 8 if eval == "nn" else 1, 
+         idx: int = None, max_samples: int = None, accuracy: float = 0.001, confidence: float = 0.95):
+    print(f"Eval: {eval}, Split: {split}, Index: {f'{max_samples if max_samples is not None else "All"}' if idx is None else idx}, Accuracy: {accuracy}, Confidence: {confidence}")
+    tr_ld, va_ld, stats = data_prep(ds_name="single_block", split_name="single_block", bs=bs if eval == "nn" else 1, 
+                                    accuracy=accuracy, confidence=confidence, load_splits=True, transform=True)
+    dl = {"tr": tr_ld, "va": va_ld}.get(split)
+    if dl is None:
+        print("Invalid split name")
+        return None 
+    eval_funcs = {
+        "nn": lambda: (lambda net, device: eval_nn(net=net, dl=dl, stats=stats, device=device, threshold=0.1, idx=idx))(*load_model(model_name="single_block", device="cuda:7")),
+        "bayesian": lambda: eval_bayesian(dl=dl, stats=stats, idx=idx, threshold=0.012, max_samples=max_samples, accuracy=accuracy, confidence=confidence)
+    }
+    if eval not in eval_funcs: 
+        print("Invalid eval")
+        return None
+    metrics = eval_funcs[eval]()
+    print(metrics)
+    return metrics
+
 if __name__ == "__main__":
-    tr_ld, va_ld, stats = data_prep(ds_name="single_block", split_name="single_block", bs=1, accuracy=0.001, confidence=0.95,                 load_splits=True, transform=True)
-    dl = tr_ld
-    ds = dl.dataset
-    net, device = load_model(model_name="single_block", device="cuda:7")
-    # eval_nn(net=net, dl=dl, ds=ds, stats=stats, device=device, threshold=0.1)
-    eval_bayesian(dl=dl, ds=ds, idx=1, threshold=0.1)
+    eval(eval="bayesian", split="va", idx=1, max_samples=5, accuracy=0.0001, confidence=0.95)

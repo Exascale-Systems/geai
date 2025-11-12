@@ -4,6 +4,7 @@ import numpy as np
 import h5py
 import math
 from src.model import GravInvNet
+from scipy.stats import norm
 
 def load_model(model_name, device="cpu"):
     device = torch.device(device)
@@ -19,12 +20,11 @@ def add_noise(shape, accuracy, confidence=0.95, seed=0):
     Simulate measurement uncertainty by adding Gaussian noise to data. 
     Eg. gravimeter accuracy is 0.1 mGal with 95% confidence.
     """
-    from scipy.stats import norm
     rng = np.random.default_rng(seed)
     z = (1.0 + confidence) / 2.0
-    # Clamp z to avoid numerical issues at extremes
     z = np.clip(z, 1e-10, 1 - 1e-10)
-    ppf_z = norm.ppf(z)
+    from scipy.stats import norm as scipy_norm
+    ppf_z = scipy_norm.ppf(z)
     sigma = accuracy / ppf_z
     return rng.normal(0.0, sigma, size=shape)
 
@@ -78,12 +78,10 @@ class TorchMetrics:
         pred = net(gz)
         pred_denorm = denorm_fn(pred, self.stats)
         tgt_denorm = denorm_fn(tgt, self.stats)
-
         diff = tgt_denorm - pred_denorm
         self.sum_se += torch.sum(diff ** 2).item()
         self.sum_ae += torch.sum(torch.abs(diff)).item()
         self.n_samples += diff.numel()
-
         true_binary = tgt_denorm > self.threshold
         pred_binary = pred_denorm > self.threshold
         self.intersection += torch.sum(true_binary & pred_binary).item()

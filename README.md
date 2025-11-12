@@ -89,6 +89,7 @@ The generation of this dataset relies on a [forked version](https://github.com/k
 3. How to improve predictions?
 
 ## To-do
+- refactor eval.py
 - train.py
     - normalization
     - loss function
@@ -105,7 +106,6 @@ The generation of this dataset relies on a [forked version](https://github.com/k
 - scalar vs vector measurement
 - StructuralGeo dataset
 ------
-- consolidate/refactor sample.py, eval.py
 - refactor plot.py
 - nn.py
     - dropout
@@ -137,6 +137,7 @@ The generation of this dataset relies on a [forked version](https://github.com/k
 - heavy refactor
 - SIMPEG eval.py
 - consolidate/refactor metrics.py, eval.py, sample.py, data.py
+- consolidate/refactor sample.py, eval.py
 
 ## Open Questions
 ### Geology
