@@ -62,7 +62,7 @@ def collate(b):
     xs, ys = zip(*[(x,y) for x,y,_,_ in b])
     return torch.stack(xs), torch.stack(ys)
 
-def data_prep(ds_name: dict, split_name: dict, bs: int, load_splits: bool = False, transform: bool = True, accuracy: float = 0.01, confidence: float = 0.95):
+def data_prep(ds_name: str, split_name: str, bs: int, load_splits: bool = True, transform: bool = True, accuracy: float = 0.01, confidence: float = 0.95):
     """
     return training dataset, validation dataset, and stats required for normalization.
     

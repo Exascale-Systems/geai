@@ -105,7 +105,7 @@ The generation of this dataset relies on a [forked version](https://github.com/k
 - scalar vs vector measurement
 - StructuralGeo dataset
 ------
-- consolidate/refactor transform.py, utils.py, gen/*
+- consolidate/refactor sample.py, eval.py
 - refactor plot.py
 - nn.py
     - dropout
