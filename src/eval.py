@@ -5,18 +5,18 @@ from tqdm import tqdm
 from src.gen.StructuralGeo_gen import gravity_survey, init_model
 from src.plot import *
 from src.gen.StructuralGeo_gen import create_mesh
-from src.utils import load_model, denorm, InversionMetrics, BayesianMetrics
+from src.utils import load_model, denorm, TorchMetrics, NumpyMetrics
 from src.data import data_prep
 from simpeg.potential_fields import gravity
 from simpeg import data, inverse_problem, regularization, optimization, directives, inversion, data_misfit
 
-def sample_nn(net: torch.nn.Module, dl: torch.utils.data.DataLoader, ds: torch.utils.data.Dataset,  
+def eval_nn(net: torch.nn.Module, dl: torch.utils.data.DataLoader, ds: torch.utils.data.Dataset,  
               stats: dict, device: torch.device, idx: int = None, threshold: float = 0.1):
     """
     Neural network prediction sampling.
     """
     net.eval()
-    metrics = InversionMetrics(stats, threshold)
+    metrics = TorchMetrics(stats, threshold)
     with torch.no_grad():
         if idx is None:
             desc = f"Evaluating {split_name}"   
@@ -68,7 +68,7 @@ def sample_nn(net: torch.nn.Module, dl: torch.utils.data.DataLoader, ds: torch.u
         'n_samples': 1 if idx is not None else len(dl.dataset)
     }
 
-def sample_bayesian(dl: torch.utils.data.DataLoader, ds: torch.utils.data.Dataset, 
+def eval_bayesian(dl: torch.utils.data.DataLoader, ds: torch.utils.data.Dataset, 
                     idx: int = None, threshold: float = 0.1, max_samples: int = None, 
                     accuracy: float = 0.001, confidence: float = 0.95):
     """
@@ -78,7 +78,7 @@ def sample_bayesian(dl: torch.utils.data.DataLoader, ds: torch.utils.data.Datase
     z = np.clip(z, 1e-10, 1 - 1e-10)
     ppf_z = norm.ppf(z)
     sigma = accuracy / ppf_z
-    metrics = BayesianMetrics(threshold)
+    metrics = NumpyMetrics(threshold)
     if idx is None:
         desc = "Evaluating Bayesian"
         iterator = tqdm(dl, desc=desc, leave=False, ncols=80)        
@@ -209,5 +209,5 @@ if __name__ == "__main__":
     dl = tr_ld
     ds = dl.dataset
     net, device = load_model(model_name="single_block", device="cuda:7")
-    # sample_nn(net=net, dl=dl, ds=ds, stats=stats, device=device, threshold=0.1)
-    sample_bayesian(dl=dl, ds=ds, idx=1, threshold=0.1)
+    # eval_nn(net=net, dl=dl, ds=ds, stats=stats, device=device, threshold=0.1)
+    eval_bayesian(dl=dl, ds=ds, idx=1, threshold=0.1)

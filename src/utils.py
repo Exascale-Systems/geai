@@ -56,9 +56,7 @@ def denorm(y_norm, stats, data_type="rho"):
         b = torch.as_tensor(stats["gz_max"], dtype=y.dtype, device=y.device)
     return ((y + 1.0) * 0.5) * (b - a) + a
 
-class InversionMetrics:
-    """Compute evaluation metrics for 3D gravity inversion."""
-
+class TorchMetrics:
     def __init__(self, stats, threshold=0.1):
         self.stats = stats
         self.threshold = threshold
@@ -101,9 +99,7 @@ class InversionMetrics:
         dice = (2 * self.intersection) / (self.true_sum + self.pred_sum) if (self.true_sum + self.pred_sum) > 0 else 1.0
         return {"RMSE": rmse, "L1": l1, "IoU": iou, "Dice": dice}
 
-class BayesianMetrics:
-    """Compute evaluation metrics for Bayesian inversion (numpy-only version)."""
-
+class NumpyMetrics:
     def __init__(self, threshold=0.1):
         self.threshold = threshold
         self.reset()
