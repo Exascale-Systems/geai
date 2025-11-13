@@ -3,20 +3,18 @@ from src.gen.hdf5_writer import MasterWriter
 from tqdm import tqdm  
 
 def generate_batch(
-    # out_path="datasets/test.h5",                                    # add path before generating!
-    ds_size=10,                                                     # number of samples to generate 
-    x_dom=1.6e3, y_dom=1.6e3, z_dom=0.8e3,                          # domain size (m)
-    n_xy=32, n_z=16,                                                # mesh resolution
-    n_blocks=1, size_frac=(0.08, 0.30), density_range=(0.0, 1.0),   # random blocks generator
+    out_path="data/single_block_v2.h5",                             # add path before generating!
+    ds_size=20000,                                                  # number of samples to generate 
+    x_dom=1.6e3, y_dom=1.6e3, z_dom=1.6e3,                          # domain size (m)
+    n_xy=32, n_z=32,                                                # mesh resolution
+    n_blocks=1, size_frac=(0.10, 0.30), density_range=(0.0, 1.0),   # random blocks generator
     base_seed=0,
-    accuracy = 0.5e-3, confidence = 0.95                            # gravimetry noise parameters
     ):
-    # invariant across samples
     topo_xyz = create_topo(x_dom=x_dom, y_dom=y_dom)
     mesh = create_mesh(topo_xyz=topo_xyz, n_xy=n_xy, n_z=n_z, z_dom=z_dom)
     ind_active, nC, model_map, _ = init_model(mesh=mesh, topo_xyz=topo_xyz)
     receiver_locations, survey = gravity_survey(
-        topo_xyz=topo_xyz, n_per_axis=n_xy, components=("gz",)
+        topo_xyz=topo_xyz, n_per_axis=n_xy, components=("gx","gy","gz","gxx","gxy","gxz","gyy","gyz","gzz")
     )
     sim = gravity.simulation.Simulation3DIntegral(
         survey=survey,
@@ -41,9 +39,8 @@ def generate_batch(
                 seed=seed,
                 enforce_nonoverlap=True,
             )
-            y = sim.dpred(true_model)
-            y += add_noise(y.shape, accuracy=accuracy, confidence=confidence, seed=seed)
-            master.add(gz=y, receiver_locations=receiver_locations, true_model=true_model, ind_active=ind_active, seed=seed)
+            gravity_data = sim.dpred(true_model)
+            master.add(gravity_data=gravity_data, receiver_locations=receiver_locations, true_model=true_model, ind_active=ind_active, seed=seed)
     return out_path
 
 if __name__ == "__main__":

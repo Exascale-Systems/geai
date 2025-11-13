@@ -2,15 +2,15 @@ import h5py
 import numpy as np
 from pathlib import Path
 
-def save_sample_h5(path, gz, receiver_locations, true_model, ind_active, seed):
+def save_sample_h5(path, gravity_data, receiver_locations, true_model, ind_active, seed):
     """
-    Save one gravity inversion sample to an individual HDF5 file. """
+    Save one gravity inversion sample to an individual HDF5 file. 
+    """
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-
     with h5py.File(path, "w") as f:
         f.attrs["seed"] = int(seed)
-        f.create_dataset("gz", data=np.asarray(gz, np.float32), compression="gzip")
+        f.create_dataset("gravity_data", data=np.asarray(gravity_data, np.float32), compression="gzip")
         f.create_dataset("receiver_locations", data=np.asarray(receiver_locations, np.float32), compression="gzip")
         f.create_dataset("true_model", data=np.asarray(true_model, np.float32), compression="gzip")
         f.create_dataset("ind_active", data=np.asarray(ind_active, np.uint8), compression="gzip")
@@ -19,7 +19,6 @@ class MasterWriter:
     """
     Master HDF5 container for all samples + global mesh info.
     """
-
     def __init__(self, master_path, shape_cells, hx, hy, hz, overwrite=True):
         self.path = Path(master_path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -34,11 +33,11 @@ class MasterWriter:
         g.create_dataset("hz", data=np.asarray(hz, np.float32))
         self.samples = self.f.create_group("samples")
 
-    def add(self, seed, gz, receiver_locations, true_model, ind_active):
+    def add(self, seed, gravity_data, receiver_locations, true_model, ind_active):
         """Add one sample using seed as group name."""
         sg = self.samples.create_group(str(seed))
         sg.attrs["seed"] = int(seed)
-        sg.create_dataset("gz", data=np.asarray(gz, np.float32), compression="gzip")
+        sg.create_dataset("gravity_data", data=np.asarray(gravity_data, np.float32), compression="gzip")
         sg.create_dataset("receiver_locations", data=np.asarray(receiver_locations, np.float32), compression="gzip")
         sg.create_dataset("true_model", data=np.asarray(true_model, np.float32), compression="gzip")
         sg.create_dataset("ind_active", data=np.asarray(ind_active, np.uint8), compression="gzip")

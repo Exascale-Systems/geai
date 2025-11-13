@@ -91,8 +91,7 @@ The generation of this dataset relies on a [forked version](https://github.com/k
 ## To-do
 #### High Priority
 - noise vs error (l1, rmse, iou, dice)
-    - Generate zero noise dataset
-    - Train (0.5e-3mGal, 0.5e-2mGal, 0.5e-1mGal, height, vector measurement)
+    - Train (0.5e-3mGal, 0.5e-2mGal, 0.5e-1mGal)x(gz, vector, vector + gradiometry)
         - Deeplearning
         - Deeplearing + SIMPEG
         - SIMPEG
@@ -113,7 +112,9 @@ The generation of this dataset relies on a [forked version](https://github.com/k
     - batch size
 - StructuralGeo dataset
 ------
-#### Low Priority
+#### Lower Priority
+- refactor gen/* pipeline
+- refactor eval
 - refactor plot.py
 - nn.py
     - dropout
@@ -148,6 +149,8 @@ The generation of this dataset relies on a [forked version](https://github.com/k
 - consolidate/refactor sample.py, eval.py
 - refactor eval.py
 - deeplearning + simpeg regularization hybrid
+- Generate clean dataset with vector and gradiometry readings
+
 
 ## Open Questions
 ### Geology

@@ -1,20 +1,19 @@
 import numpy as np
 from scipy.interpolate import LinearNDInterpolator
-from src.utils import add_noise
 from discretize import TensorMesh
 from discretize.utils import active_from_xyz
 from simpeg import maps
 from simpeg.potential_fields import gravity
 
 def create_topo(
-        x_dom=1.6e3, y_dom=1.6e3,   # domain size in x/y (m)
-        dx=50, dy=50,               # grid spacing in x/y (m)   
-        fbm_amp=0.0,                # amplitude of topography (set to 0 for flat)
-        seed=0,                     # random seed
-        noise_sigma=0.0,            # stddev of Gaussian noise added to topography (m)
-        cycles1=(1.0, 1.0),         # number of long-wavelength cycles in x/y
-        cycles2=(3.0, 2.0),         # number of finer cycles in x/y
-        phase=0.0,                  # phase offset
+        x_dom: float = 1.6e3, y_dom: float = 1.6e3,   # domain size in x/y (m)
+        dx: float = 50, dy: float = 50,               # grid spacing in x/y (m)   
+        fbm_amp: float = 0.0,                         # amplitude of topography (set to 0 for flat)
+        seed: int = 0,                                # random seed
+        noise_sigma: float = 0.0,                     # stddev of Gaussian noise added to topography (m)
+        cycles1: tuple = (1.0, 1.0),                  # number of long-wavelength cycles in x/y
+        cycles2: tuple = (3.0, 2.0),                  # number of finer cycles in x/y
+        phase: float = 0.0,                           # phase offset
     ):
     """Return (N,3) synthetic topography points."""
     rng = np.random.default_rng(seed)
@@ -34,10 +33,10 @@ def create_topo(
     return np.c_[X.ravel(), Y.ravel(), Z.ravel()]
 
 def create_mesh(
-        topo_xyz, 
-        n_xy=32,    # number of cells in x and y
-        n_z=16,     # number of cells in z
-        z_dom=500.0 # domain size in z (m)
+        topo_xyz: np.ndarray,   # (N,3) array of topography points
+        n_xy: int = 32,         # number of cells in x and y
+        n_z: int = 16,          # number of cells in z
+        z_dom: float = 800.0    # domain size in z (m)
     ):
     """
     Returns tensor with origin (0, 0, 0) where x and y is +ve and z is -ve.
@@ -121,17 +120,15 @@ def gravity_survey(
     survey = gravity.survey.Survey(src)
     return receiver_locations, survey
 
-
-
 def main():
     topo_xyz = create_topo()
-    mesh = create_mesh(topo_xyz, n_xy=32, n_z=16, z_dom=500.0)
+    mesh = create_mesh(topo_xyz, n_xy=32, n_z=16, z_dom=800.0)
     ind_active, nC, model_map, true_model = init_model(mesh, topo_xyz)
     true_model, blocks_mask = add_random_blocks(
         mesh=mesh,
         ind_active=ind_active,
         model=true_model,
-        n_blocks=3,
+        n_blocks=1,
         size_frac_range=(0.08, 0.30),
         density_range=(0.0, 2.0),
         enforce_nonoverlap=True,
@@ -145,7 +142,6 @@ def main():
         engine="choclo",
     )
     y = sim.dpred(true_model)
-    y += add_noise(y.shape, accuracy=0.05, confidence=0.95, seed=0)
     import matplotlib.pyplot as plt
     plt.hist(y, bins=50, density=False, alpha=0.7)
     plt.show()
