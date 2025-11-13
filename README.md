@@ -89,9 +89,16 @@ The generation of this dataset relies on a [forked version](https://github.com/k
 3. How to improve predictions?
 
 ## To-do
+#### High Priority
+- noise vs error (l1, rmse, iou, dice)
+    - Deeplearning (no, medium, high)
+    - Deeplearing + SIMPEG
+    - SIMPEG
+    - scalar vs vector measurement
 - train.py
     - normalization
     - loss function
+        - physics informed (simpeg forward pass)
     - data augmentation
         - noise
         - rotation
@@ -99,12 +106,9 @@ The generation of this dataset relies on a [forked version](https://github.com/k
     - weight decay
     - learning Rate
     - batch size
-- noise vs error (l1, rmse, iou, dice)
-    - Deeplearning (no, medium, high)
-    - SIMPEG
-- scalar vs vector measurement
 - StructuralGeo dataset
 ------
+#### Low Priority
 - refactor plot.py
 - nn.py
     - dropout
@@ -138,6 +142,7 @@ The generation of this dataset relies on a [forked version](https://github.com/k
 - consolidate/refactor metrics.py, eval.py, sample.py, data.py
 - consolidate/refactor sample.py, eval.py
 - refactor eval.py
+- deeplearning + simpeg regularization hybrid
 
 ## Open Questions
 ### Geology

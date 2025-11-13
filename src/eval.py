@@ -70,6 +70,130 @@ def eval_nn(net: torch.nn.Module, dl: torch.utils.data.DataLoader,
         'n_samples': 1 if idx is not None else len(dl.dataset)
     }
 
+def eval_hybrid(net: torch.nn.Module, dl: torch.utils.data.DataLoader, stats: dict, 
+                device: torch.device, idx: int = None, threshold: float = 0.1, 
+                max_samples: int = None, accuracy: float = 0.001, confidence: float = 0.95):
+    """
+    Hybrid NN-Bayesian inversion: Use NN prediction as initial model (m0) for SimPEG.
+    """
+    net.eval()
+    z = (1.0 + confidence) / 2.0
+    z = np.clip(z, 1e-10, 1 - 1e-10)
+    ppf_z = norm.ppf(z)
+    sigma = accuracy / ppf_z
+    metrics = NumpyMetrics(threshold)
+    if idx is None:
+        desc = "Evaluating Hybrid"
+        iterator = tqdm(dl, desc=desc, leave=False, ncols=80)        
+        for local_idx, (x, true_y) in enumerate(iterator):
+            if max_samples is not None and local_idx >= max_samples:
+                break
+            with torch.no_grad():
+                x_tensor = x.to(device)
+                nn_pred = net(x_tensor)
+                nn_m0 = denorm(nn_pred[0].permute(2,1,0).reshape(-1), stats, data_type="rho").cpu().numpy().flatten(order="F")
+            x = denorm(x.squeeze(0), stats, "gz").cpu().numpy().flatten()
+            true_y = denorm(true_y.squeeze(0), stats, "rho").cpu().numpy().flatten(order="F")
+            ds = dl.dataset.dataset
+            ds.transform = None
+            g_idx = dl.dataset.indices[local_idx]
+            sample_data = ds[g_idx]
+            rx, true_x = sample_data['receiver_locations'].cpu().numpy(), sample_data['gz'].cpu().numpy()
+            ind = sample_data['ind_active'].cpu().numpy().astype(bool)
+            mesh = create_mesh(bounds=((0, ds.shape_cells[0]*ds.hx[0]), 
+                                    (0, ds.shape_cells[1]*ds.hy[0]), 
+                                    (0, ds.shape_cells[2]*ds.hz[0])), 
+                            resolution=ds.shape_cells)
+            _, survey = gravity_survey(rx, components=("gz",))
+            _, _, model_map, _ = init_model(mesh, rx, 0)
+            sim = gravity.simulation.Simulation3DIntegral(
+                survey=survey, mesh=mesh, rhoMap=model_map, active_cells=ind, engine="choclo"
+                )
+            data_object = data.Data(survey, dobs=x, noise_floor=sigma)
+            dmis = data_misfit.L2DataMisfit(data=data_object, simulation=sim)
+            reg = regularization.WeightedLeastSquares(mesh, active_cells=ind, mapping=model_map)
+            opt = optimization.ProjectedGNCG(maxIter=10, lower=-1.0, upper=1.0, maxIterLS=20, cg_maxiter=10, cg_atol=1e-3)
+            inv_prob = inverse_problem.BaseInvProblem(dmis, reg, opt)
+            starting_beta = directives.BetaEstimate_ByEig(beta0_ratio=1e1)
+            beta_schedule = directives.BetaSchedule(coolingFactor=5, coolingRate=1)
+            save_iteration = directives.SaveOutputEveryIteration(on_disk=False)
+            update_jacobi = directives.UpdatePreconditioner()
+            target_misfit = directives.TargetMisfit(chifact=1)
+            sensitivity_weights = directives.UpdateSensitivityWeights(every_iteration=False)
+            directives_list = [
+                sensitivity_weights,
+                starting_beta,
+                beta_schedule,
+                save_iteration,
+                update_jacobi,
+                target_misfit,
+            ]
+            inv = inversion.BaseInversion(inv_prob, directives_list)
+            pred_y = inv.run(nn_m0)
+            pred_y = denorm(torch.from_numpy(pred_y), stats, "rho").numpy()
+            metrics.update(true_y, pred_y)
+    else:
+        x, true_y, _, _ = dl.dataset[idx]
+        with torch.no_grad():
+            x_tensor = x.unsqueeze(0).to(device)
+            nn_pred = net(x_tensor)
+            nn_m0 = denorm(nn_pred[0].permute(2,1,0).reshape(-1), stats, data_type="rho").cpu().numpy().flatten(order="F")
+        x = denorm(x.squeeze(0), stats, "gz").cpu().numpy().flatten()
+        true_y = denorm(true_y.squeeze(0), stats, "rho").cpu().numpy().flatten(order="F")
+        ds = dl.dataset.dataset
+        ds.transform = None
+        g_idx = dl.dataset.indices[idx]
+        sample_data = ds[g_idx]
+        rx, true_x = sample_data['receiver_locations'].cpu().numpy(), sample_data['gz'].cpu().numpy()
+        ind = sample_data['ind_active'].cpu().numpy().astype(bool)
+        mesh = create_mesh(bounds=((0, ds.shape_cells[0]*ds.hx[0]), 
+                                (0, ds.shape_cells[1]*ds.hy[0]), 
+                                (0, ds.shape_cells[2]*ds.hz[0])), 
+                        resolution=ds.shape_cells)
+        _, survey = gravity_survey(rx, components=("gz",))
+        _, _, model_map, _ = init_model(mesh, rx, 0)
+        sim = gravity.simulation.Simulation3DIntegral(
+                survey=survey, mesh=mesh, rhoMap=model_map, active_cells=ind, engine="choclo"
+            )
+        data_object = data.Data(survey, dobs=x, noise_floor=sigma)
+        dmis = data_misfit.L2DataMisfit(data=data_object, simulation=sim)
+        reg = regularization.WeightedLeastSquares(mesh, active_cells=ind, mapping=model_map)
+        opt = optimization.ProjectedGNCG(maxIter=50, maxIterLS=20, cg_maxiter=10, cg_atol=1e-5)
+        inv_prob = inverse_problem.BaseInvProblem(dmis, reg, opt)
+        starting_beta = directives.BetaEstimate_ByEig(beta0_ratio=1e1)
+        beta_schedule = directives.BetaSchedule(coolingFactor=5, coolingRate=1)
+        save_iteration = directives.SaveOutputEveryIteration(on_disk=False)
+        update_jacobi = directives.UpdatePreconditioner()
+        target_misfit = directives.TargetMisfit(chifact=1)
+        sensitivity_weights = directives.UpdateSensitivityWeights(every_iteration=False)
+        directives_list = [
+            sensitivity_weights,
+            starting_beta,
+            beta_schedule,
+            save_iteration,
+            update_jacobi,
+            target_misfit,
+        ]
+        inv = inversion.BaseInversion(inv_prob, directives_list)
+        pred_y = inv.run(nn_m0)
+        metrics.update(true_y, pred_y)
+        preq_x = sim.dpred(pred_y)
+        plot_gravity_measurements(rx, true_x, title="True Gravity Data (gz)")
+        plot_density_contrast_3D(mesh, ind, true_y)
+        plot_gravity_measurements(rx, x, title="Input Gravity Data (x)")
+        plot_density_contrast_3D(mesh, ind, pred_y)
+        plot_gravity_measurements(rx, preq_x, title="Predicted Gravity Data (y)")
+        input("Press Enter to close plots...")
+    results = metrics.compute()
+    rmse_val, l1_val, iou_val, dice_val = results["RMSE"], results["L1"], results["IoU"], results["Dice"]
+    return {
+        'rmse': rmse_val,
+        'l1': l1_val,
+        'iou': iou_val,
+        'dice': dice_val,
+        'n_samples': 1 if idx is not None else len(dl.dataset)
+    }
+
 def eval_bayesian(dl: torch.utils.data.DataLoader, stats: dict, 
                   idx: int = None, threshold: float = 0.1, max_samples: int = None,
                   accuracy: float = 0.001, confidence: float = 0.95):
@@ -218,7 +342,8 @@ def eval(eval: str = "nn", split: str = "va", bs: int = 8 if eval == "nn" else 1
         return None 
     eval_funcs = {
         "nn": lambda: (lambda net, device: eval_nn(net=net, dl=dl, stats=stats, device=device, threshold=0.1, idx=idx))(*load_model(model_name="single_block", device="cuda:7")),
-        "bayesian": lambda: eval_bayesian(dl=dl, stats=stats, idx=idx, threshold=0.012, max_samples=max_samples, accuracy=accuracy, confidence=confidence)
+        "bayesian": lambda: eval_bayesian(dl=dl, stats=stats, idx=idx, threshold=0.012, max_samples=max_samples, accuracy=accuracy, confidence=confidence),
+        "hybrid": lambda: (lambda net, device: eval_hybrid(net=net, dl=dl, stats=stats, device=device, threshold=0.1, idx=idx, max_samples=max_samples, accuracy=accuracy, confidence=confidence))(*load_model(model_name="single_block", device="cuda:7"))
     }
     if eval not in eval_funcs: 
         print("Invalid eval")
@@ -228,4 +353,4 @@ def eval(eval: str = "nn", split: str = "va", bs: int = 8 if eval == "nn" else 1
     return metrics
 
 if __name__ == "__main__":
-    eval(eval="bayesian", split="va", idx=1, max_samples=5, accuracy=0.0001, confidence=0.95)
+    eval(eval="hybrid", split="va", idx=1, max_samples=5, accuracy=0.0001, confidence=0.95)
