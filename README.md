@@ -90,11 +90,10 @@ The generation of this dataset relies on a [forked version](https://github.com/k
 
 ## To-do
 #### High Priority
-- noise vs error (l1, rmse, iou, dice)
-    - Train (0.5e-3mGal, 0.5e-2mGal, 0.5e-1mGal)x(gz, vector, vector + gradiometry)
-        - Deeplearning
-        - Deeplearing + SIMPEG
-        - SIMPEG
+- sensor-type vs inversion technique vs noisefloor vs error (l1, rmse, iou, dice)
+    - Train (0.5e-3mGal, 0.5e-2mGal, 0.5e-1mGal)x(gz, vector, vector + gzz)
+    - Evaluate best performing net for (gz, vector, vector + gzz)
+    - Evaluate (gz, vector, vector + gzz)x(dl, dl+simpeg, simpeg)
 - train.py
     - normalization
     - loss function
