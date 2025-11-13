@@ -91,14 +91,19 @@ The generation of this dataset relies on a [forked version](https://github.com/k
 ## To-do
 #### High Priority
 - noise vs error (l1, rmse, iou, dice)
-    - Deeplearning (no, medium, high)
-    - Deeplearing + SIMPEG
-    - SIMPEG
-    - scalar vs vector measurement
+    - Generate zero noise dataset
+    - Train (0.5e-3mGal, 0.5e-2mGal, 0.5e-1mGal, height, vector measurement)
+        - Deeplearning
+        - Deeplearing + SIMPEG
+        - SIMPEG
 - train.py
     - normalization
     - loss function
-        - physics informed (simpeg forward pass)
+        - MAE
+        - dice
+        - IoU
+        - MSE + Dice or IoU
+        - simpeg forward pass - compare true gravity to predicted gravity
     - data augmentation
         - noise
         - rotation
