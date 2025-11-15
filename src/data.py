@@ -34,7 +34,7 @@ class MasterDataset(Dataset):
         s = f["samples"][k]
         sample = {
             "seed": torch.tensor(int(s.attrs.get("seed", int(k))), dtype=torch.int32),
-            "gz": torch.as_tensor(s["gz"][:], dtype=torch.float32, device=self.device),
+            "gz": torch.as_tensor(s["gravity_data"][2::9], dtype=torch.float32, device=self.device),
             "receiver_locations": torch.as_tensor(s["receiver_locations"][:], dtype=torch.float32, device=self.device),
             "true_model": torch.as_tensor(s["true_model"][:], dtype=torch.float32, device=self.device),
             "ind_active": torch.as_tensor(s["ind_active"][:], dtype=torch.uint8, device=self.device),
@@ -104,17 +104,18 @@ def make_transform(shape_cells, stats, noise=(0, 0)):
 
     def to_tensors(sample):
         g = sample["gz"]
+        t = sample["true_model"]
         n = add_noise(g.shape, accuracy=noise[0], confidence=noise[1]) #data augementation of noise
         g+=n
-        gz = norm(g, stats["gz_min"], stats["gz_max"])
+        # gz = norm(g, stats["gz_min"], stats["gz_max"])
         # h = norm(sample["receiver_locations"][:,2], 0, 800) # survey height as a channel
-        dev = gz.device
-        tm = norm(sample["true_model"], stats["rho_min"], stats["rho_max"])
-        a = gz.to(dtype=torch.float32, device=dev).view(1, ny, nx)                   
+        dev = g.device
+        # tm = norm(sample["true_model"], stats["rho_min"], stats["rho_max"])
+        a = g.to(dtype=torch.float32, device=dev).view(1, ny, nx)                   
         # b = h.to(dtype=torch.float32, device=dev).view(1, ny, nx)                     
         # x = torch.cat([a, b], dim=0)
         x = a  # single channel
-        y = tm.to(dtype=torch.float32, device=dev).reshape(nx, ny, nz).permute(2, 1, 0).contiguous()
+        y = t.to(dtype=torch.float32, device=dev).reshape(nx, ny, nz).permute(2, 1, 0).contiguous()
         m = torch.as_tensor(sample["ind_active"]).to(device=dev).reshape(nx, ny, nz).permute(2, 1, 0).contiguous().to(torch.bool)
         return x, y, m, sample["seed"]
     

@@ -24,7 +24,7 @@ def eval_nn(net: torch.nn.Module, dl: torch.utils.data.DataLoader,
             iterator = tqdm(dl, desc=desc, leave=False, ncols=80)
             for x, true_y in iterator:
                 x, true_y = x.to(device), true_y.to(device)
-                metrics.update(net, x, true_y, denorm)
+                metrics.update(net, x, true_y, denorm)  # No denorm needed since data not normalized
             results = metrics.compute()
             rmse_val, l1_val, iou_val, dice_val = results["RMSE"], results["L1"], results["IoU"], results["Dice"]
         else:
@@ -35,8 +35,8 @@ def eval_nn(net: torch.nn.Module, dl: torch.utils.data.DataLoader,
             results = metrics.compute()
             rmse_val, l1_val, iou_val, dice_val = results["RMSE"], results["L1"], results["IoU"], results["Dice"]
             pred_y = net(x)
-            x = denorm(x.squeeze(), stats, data_type="gz").cpu().numpy().flatten(order="F") 
-            pred_y = denorm(pred_y[0].permute(2,1,0).reshape(-1), stats, data_type="rho").cpu().numpy().flatten(order="F")
+            x = x.squeeze().cpu().numpy().flatten(order="F")  # denorm(x.squeeze(), stats, data_type="gz").cpu().numpy().flatten(order="F") 
+            pred_y = pred_y[0].permute(2,1,0).reshape(-1).cpu().numpy().flatten(order="F")  # denorm(pred_y[0].permute(2,1,0).reshape(-1), stats, data_type="rho").cpu().numpy().flatten(order="F")
             ds.dataset.transform = None
             g_idx = ds.indices[idx]
             sample_data = ds.dataset[g_idx]
@@ -91,9 +91,9 @@ def eval_hybrid(net: torch.nn.Module, dl: torch.utils.data.DataLoader, stats: di
             with torch.no_grad():
                 x_tensor = x.to(device)
                 nn_pred = net(x_tensor)
-                nn_m0 = denorm(nn_pred[0].permute(2,1,0).reshape(-1), stats, data_type="rho").cpu().numpy().flatten(order="F")
-            x = denorm(x.squeeze(0), stats, "gz").cpu().numpy().flatten()
-            true_y = denorm(true_y.squeeze(0), stats, "rho").cpu().numpy().flatten(order="F")
+                nn_m0 = nn_pred[0].permute(2,1,0).reshape(-1).cpu().numpy().flatten(order="F")  # denorm(nn_pred[0].permute(2,1,0).reshape(-1), stats, data_type="rho").cpu().numpy().flatten(order="F")
+            x = x.squeeze(0).cpu().numpy().flatten()  # denorm(x.squeeze(0), stats, "gz").cpu().numpy().flatten()
+            true_y = true_y.squeeze(0).cpu().numpy().flatten(order="F")  # denorm(true_y.squeeze(0), stats, "rho").cpu().numpy().flatten(order="F")
             ds = dl.dataset.dataset
             ds.transform = None
             g_idx = dl.dataset.indices[local_idx]
@@ -130,7 +130,7 @@ def eval_hybrid(net: torch.nn.Module, dl: torch.utils.data.DataLoader, stats: di
             ]
             inv = inversion.BaseInversion(inv_prob, directives_list)
             pred_y = inv.run(nn_m0)
-            pred_y = denorm(torch.from_numpy(pred_y), stats, "rho").numpy()
+            pred_y = torch.from_numpy(pred_y).numpy()  # denorm(torch.from_numpy(pred_y), stats, "rho").numpy()
             metrics.update(true_y, pred_y)
     else:
         x, true_y, _, _ = dl.dataset[idx]
@@ -138,8 +138,8 @@ def eval_hybrid(net: torch.nn.Module, dl: torch.utils.data.DataLoader, stats: di
             x_tensor = x.unsqueeze(0).to(device)
             nn_pred = net(x_tensor)
             nn_m0 = denorm(nn_pred[0].permute(2,1,0).reshape(-1), stats, data_type="rho").cpu().numpy().flatten(order="F")
-        x = denorm(x.squeeze(0), stats, "gz").cpu().numpy().flatten()
-        true_y = denorm(true_y.squeeze(0), stats, "rho").cpu().numpy().flatten(order="F")
+        x = x.squeeze(0).cpu().numpy().flatten()  # denorm(x.squeeze(0), stats, "gz").cpu().numpy().flatten()
+        true_y = true_y.squeeze(0).cpu().numpy().flatten(order="F")  # denorm(true_y.squeeze(0), stats, "rho").cpu().numpy().flatten(order="F")
         ds = dl.dataset.dataset
         ds.transform = None
         g_idx = dl.dataset.indices[idx]
@@ -211,8 +211,8 @@ def eval_bayesian(dl: torch.utils.data.DataLoader, stats: dict,
         for local_idx, (x, true_y) in enumerate(iterator):
             if max_samples is not None and local_idx >= max_samples:
                 break
-            x = denorm(x.squeeze(0), stats, "gz").cpu().numpy().flatten()
-            true_y = denorm(true_y.squeeze(0), stats, "rho").cpu().numpy().flatten(order="F")
+            x = x.squeeze(0).cpu().numpy().flatten()  # denorm(x.squeeze(0), stats, "gz").cpu().numpy().flatten()
+            true_y = true_y.squeeze(0).cpu().numpy().flatten(order="F")  # denorm(true_y.squeeze(0), stats, "rho").cpu().numpy().flatten(order="F")
             ds = dl.dataset.dataset
             ds.transform = None
             g_idx = dl.dataset.indices[local_idx]
@@ -258,12 +258,12 @@ def eval_bayesian(dl: torch.utils.data.DataLoader, stats: dict,
             inv = inversion.BaseInversion(inv_prob, directives_list)
             y = np.zeros(int(ind.sum()))
             pred_y = inv.run(y)
-            pred_y = denorm(torch.from_numpy(pred_y), stats, "rho").numpy()
+            pred_y = torch.from_numpy(pred_y).numpy()  # denorm(torch.from_numpy(pred_y), stats, "rho").numpy()
             metrics.update(true_y, pred_y)
     else:
         x, true_y, _, _ = dl.dataset[idx]
-        x = denorm(x.squeeze(0), stats, "gz").cpu().numpy().flatten()
-        true_y = denorm(true_y.squeeze(0), stats, "rho").cpu().numpy().flatten(order="F")
+        x = x.squeeze(0).cpu().numpy().flatten()  # denorm(x.squeeze(0), stats, "gz").cpu().numpy().flatten()
+        true_y = true_y.squeeze(0).cpu().numpy().flatten(order="F")  # denorm(true_y.squeeze(0), stats, "rho").cpu().numpy().flatten(order="F")
         ds = dl.dataset.dataset
         ds.transform = None
         g_idx = dl.dataset.indices[idx]

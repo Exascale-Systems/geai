@@ -32,7 +32,7 @@ def compute_stats(h5_path):
     gz_min, gz_max, rho_min, rho_max = math.inf, -math.inf, math.inf, -math.inf
     with h5py.File(h5_path, "r") as f:
         for s in f["samples"].values():
-            gz = s["gz"][()]
+            gz = s["gravity_data"][()]
             gz_min, gz_max = min(gz_min, gz.min()), max(gz_max, gz.max())
             tm = s["true_model"][()]
             vals = tm
@@ -76,8 +76,9 @@ class TorchMetrics:
     def update(self, net, gz, tgt, denorm_fn):
         """Accumulate metrics for a single batch."""
         pred = net(gz)
-        pred_denorm = denorm_fn(pred, self.stats)
-        tgt_denorm = denorm_fn(tgt, self.stats)
+        # Skip denormalization since data is not normalized
+        pred_denorm = pred  # denorm_fn(pred, self.stats)
+        tgt_denorm = tgt    # denorm_fn(tgt, self.stats)
         diff = tgt_denorm - pred_denorm
         self.sum_se += torch.sum(diff ** 2).item()
         self.sum_ae += torch.sum(torch.abs(diff)).item()

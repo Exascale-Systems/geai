@@ -1,9 +1,12 @@
-device = 'cuda:7'
-lr = 1e-3
+device = 'cuda:5'
+lr = 3e-4
 wd = 0.0
 batch_size = 8
 max_epochs = 200
+min_loss = 1e-6
 eval_interval = 10
+accuracy = 5e-4 # noise floor
+confidence = 0.95 # confidence level for noise
 
 from tqdm.auto import tqdm
 import torch, torch.nn as nn
@@ -58,7 +61,7 @@ def train(tr_ld: DataLoader, va_ld: DataLoader, E=max_epochs, min_loss=1e-5, sta
         writer.add_scalar("Hyperparams/LR", lr, e)
         writer.add_scalar("Hyperparams/WeightDecay", wd, e)
         if e % eval_interval == 0:
-            metrics = eval_nn(net, va_ld, va_ld.dataset, stats, dev)
+            metrics = eval_nn(net, va_ld, stats, dev)
             writer.add_scalar("Metrics/RMSE", metrics['rmse'], e)
             writer.add_scalar("Metrics/L1", metrics['l1'], e)
             writer.add_scalar("Metrics/IoU", metrics['iou'], e)
@@ -79,8 +82,8 @@ def train(tr_ld: DataLoader, va_ld: DataLoader, E=max_epochs, min_loss=1e-5, sta
     torch.save({"model": net.state_dict()}, "checkpoints/final.pt")
 
 def main():
-    tr_ld, va_ld, stats = data_prep(ds_name="single_block_overfit", split_name="test")
-    train(tr_ld, va_ld, E=200, min_loss=1e-5, stats=stats)
+    tr_ld, va_ld, stats = data_prep(ds_name="single_block_v2", split_name="single_block_05", bs=batch_size, load_splits=False, transform=True, accuracy=accuracy, confidence=confidence)
+    train(tr_ld, va_ld, E=max_epochs, min_loss=min_loss, stats=stats)
 
 if __name__ == "__main__":
     main()

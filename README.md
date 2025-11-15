@@ -148,8 +148,7 @@ The generation of this dataset relies on a [forked version](https://github.com/k
 - consolidate/refactor sample.py, eval.py
 - refactor eval.py
 - deeplearning + simpeg regularization hybrid
-- Generate clean dataset with vector and gradiometry readings
-
+- Generate clean dataset with vector and grad components
 
 ## Open Questions
 ### Geology
