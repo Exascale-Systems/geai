@@ -110,6 +110,11 @@ The generation of this dataset relies on a [forked version](https://github.com/k
     - learning Rate
     - batch size
 - StructuralGeo dataset
+- https://www.youtube.com/watch?v=FwN9O1AnS3g&t=764s (mira & xcalibur)
+    - terrain correction
+    - ![alt text](image-1.png)
+    - dtu15 free-air satellite dataset
+    - potential field models
 ------
 #### Lower Priority
 - refactor gen/* pipeline
@@ -124,6 +129,7 @@ The generation of this dataset relies on a [forked version](https://github.com/k
         - Ablation study
 - multi gpu
 - confidence
+- unstructured mesh??? https://www.youtube.com/watch?v=mvKNf_9CYTQ (geotexera)
 
 ## Completed
 - inspect.py / plot.py
@@ -149,6 +155,7 @@ The generation of this dataset relies on a [forked version](https://github.com/k
 - refactor eval.py
 - deeplearning + simpeg regularization hybrid
 - Generate clean dataset with vector and grad components
+- Train 0.5e-3mGal
 
 ## Open Questions
 ### Geology

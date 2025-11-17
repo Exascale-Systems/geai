@@ -24,19 +24,22 @@ def eval_nn(net: torch.nn.Module, dl: torch.utils.data.DataLoader,
             iterator = tqdm(dl, desc=desc, leave=False, ncols=80)
             for x, true_y in iterator:
                 x, true_y = x.to(device), true_y.to(device)
-                metrics.update(net, x, true_y, denorm)  # No denorm needed since data not normalized
+                metrics.update(net, x, true_y, None)  # No denorm needed since data not normalized
             results = metrics.compute()
             rmse_val, l1_val, iou_val, dice_val = results["RMSE"], results["L1"], results["IoU"], results["Dice"]
         else:
             ds = dl.dataset
             x, true_y, _, _ = ds[idx]
             x, true_y = x.unsqueeze(0).to(device), true_y.unsqueeze(0).to(device)
-            metrics.update(net, x, true_y, denorm)
+            metrics.update(net, x, true_y, None)
             results = metrics.compute()
             rmse_val, l1_val, iou_val, dice_val = results["RMSE"], results["L1"], results["IoU"], results["Dice"]
             pred_y = net(x)
             x = x.squeeze().cpu().numpy().flatten(order="F")  # denorm(x.squeeze(), stats, data_type="gz").cpu().numpy().flatten(order="F") 
             pred_y = pred_y[0].permute(2,1,0).reshape(-1).cpu().numpy().flatten(order="F")  # denorm(pred_y[0].permute(2,1,0).reshape(-1), stats, data_type="rho").cpu().numpy().flatten(order="F")
+            plt.hist(pred_y, bins=50, alpha=0.5, label="Predicted"
+                     )
+            plt.show()
             ds.dataset.transform = None
             g_idx = ds.indices[idx]
             sample_data = ds.dataset[g_idx]
@@ -137,7 +140,7 @@ def eval_hybrid(net: torch.nn.Module, dl: torch.utils.data.DataLoader, stats: di
         with torch.no_grad():
             x_tensor = x.unsqueeze(0).to(device)
             nn_pred = net(x_tensor)
-            nn_m0 = denorm(nn_pred[0].permute(2,1,0).reshape(-1), stats, data_type="rho").cpu().numpy().flatten(order="F")
+            nn_m0 = nn_pred[0].permute(2,1,0).reshape(-1).cpu().numpy().flatten(order="F")  # denorm(nn_pred[0].permute(2,1,0).reshape(-1), stats, data_type="rho").cpu().numpy().flatten(order="F")
         x = x.squeeze(0).cpu().numpy().flatten()  # denorm(x.squeeze(0), stats, "gz").cpu().numpy().flatten()
         true_y = true_y.squeeze(0).cpu().numpy().flatten(order="F")  # denorm(true_y.squeeze(0), stats, "rho").cpu().numpy().flatten(order="F")
         ds = dl.dataset.dataset
@@ -334,16 +337,16 @@ def eval_bayesian(dl: torch.utils.data.DataLoader, stats: dict,
 def eval(eval: str = "nn", split: str = "va", bs: int = 8 if eval == "nn" else 1, 
          idx: int = None, max_samples: int = None, accuracy: float = 0.001, confidence: float = 0.95):
     print(f"Eval: {eval}, Split: {split}, Index: {f'{max_samples if max_samples is not None else "All"}' if idx is None else idx}, Accuracy: {accuracy}, Confidence: {confidence}")
-    tr_ld, va_ld, stats = data_prep(ds_name="single_block", split_name="single_block", bs=bs if eval == "nn" else 1, 
+    tr_ld, va_ld, stats = data_prep(ds_name="single_block_v2", split_name="single_block_v2", bs=bs if eval == "nn" else 1, 
                                     accuracy=accuracy, confidence=confidence, load_splits=True, transform=True)
     dl = {"tr": tr_ld, "va": va_ld}.get(split)
     if dl is None:
         print("Invalid split name")
         return None 
     eval_funcs = {
-        "nn": lambda: (lambda net, device: eval_nn(net=net, dl=dl, stats=stats, device=device, threshold=0.1, idx=idx))(*load_model(model_name="single_block", device="cuda:7")),
+        "nn": lambda: (lambda net, device: eval_nn(net=net, dl=dl, stats=stats, device=device, threshold=0.1, idx=idx))(*load_model(model_name="single_block_05", device="cuda:5")),
         "bayesian": lambda: eval_bayesian(dl=dl, stats=stats, idx=idx, threshold=0.012, max_samples=max_samples, accuracy=accuracy, confidence=confidence),
-        "hybrid": lambda: (lambda net, device: eval_hybrid(net=net, dl=dl, stats=stats, device=device, threshold=0.1, idx=idx, max_samples=max_samples, accuracy=accuracy, confidence=confidence))(*load_model(model_name="single_block", device="cuda:7"))
+        "hybrid": lambda: (lambda net, device: eval_hybrid(net=net, dl=dl, stats=stats, device=device, threshold=0.1, idx=idx, max_samples=max_samples, accuracy=accuracy, confidence=confidence))(*load_model(model_name="single_block_05", device="cuda:5"))
     }
     if eval not in eval_funcs: 
         print("Invalid eval")
@@ -353,4 +356,4 @@ def eval(eval: str = "nn", split: str = "va", bs: int = 8 if eval == "nn" else 1
     return metrics
 
 if __name__ == "__main__":
-    eval(eval="hybrid", split="va", idx=1, max_samples=5, accuracy=0.0001, confidence=0.95)
+    eval(eval="nn", split="va", idx=None, max_samples=None, accuracy=0.0001, confidence=0.95)

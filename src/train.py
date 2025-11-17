@@ -5,7 +5,7 @@ batch_size = 8
 max_epochs = 200
 min_loss = 1e-6
 eval_interval = 10
-accuracy = 5e-4 # noise floor
+accuracy = 5e-1 # noise floor
 confidence = 0.95 # confidence level for noise
 
 from tqdm.auto import tqdm
@@ -71,6 +71,7 @@ def train(tr_ld: DataLoader, va_ld: DataLoader, E=max_epochs, min_loss=1e-5, sta
             pbar.set_postfix(train=f"{tr:.4f}", validation=f"{va:.4f}")
         for name, param in net.named_parameters():
             writer.add_histogram(f"Weights/{name}", param, e)
+        writer.flush()
         if va < best:
             best = va
             torch.save({'model': net.state_dict()}, 'checkpoints/best.pt')
@@ -82,7 +83,7 @@ def train(tr_ld: DataLoader, va_ld: DataLoader, E=max_epochs, min_loss=1e-5, sta
     torch.save({"model": net.state_dict()}, "checkpoints/final.pt")
 
 def main():
-    tr_ld, va_ld, stats = data_prep(ds_name="single_block_v2", split_name="single_block_05", bs=batch_size, load_splits=False, transform=True, accuracy=accuracy, confidence=confidence)
+    tr_ld, va_ld, stats = data_prep(ds_name="single_block_v2", split_name="single_block_v2", bs=batch_size, load_splits=True, transform=True, accuracy=accuracy, confidence=confidence)
     train(tr_ld, va_ld, E=max_epochs, min_loss=min_loss, stats=stats)
 
 if __name__ == "__main__":
