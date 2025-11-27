@@ -19,7 +19,7 @@ def generate_batch(
             topo_xyz = create_topo(model)
             ind_active, nC, model_map, _ = init_model(mesh, topo_xyz)
             model = model.ravel(order="F")
-            receiver_locations, survey = gravity_survey(topo_xyz, components=("gz",))
+            receiver_locations, survey = gravity_survey(topo_xyz, components=("gx", "gy", "gz"))
             sim = gravity.simulation.Simulation3DIntegral(
                 survey=survey,
                 mesh=mesh,
@@ -28,7 +28,7 @@ def generate_batch(
                 engine="choclo",
             )
             y = sim.dpred(model)
-            master.add(gz=y, receiver_locations=receiver_locations, true_model=model, ind_active=ind_active, seed=k)
+            master.add(seed=k, gravity_data=y, receiver_locations=receiver_locations, true_model=model, ind_active=ind_active)
             model.fill(0.0)
     return out_path
 

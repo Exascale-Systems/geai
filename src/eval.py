@@ -35,7 +35,7 @@ def eval_nn(net: torch.nn.Module, dl: torch.utils.data.DataLoader,
             results = metrics.compute()
             rmse_val, l1_val, iou_val, dice_val = results["RMSE"], results["L1"], results["IoU"], results["Dice"]
             pred_y = net(x)
-            x = x.squeeze().cpu().numpy().flatten(order="F")  # denorm(x.squeeze(), stats, data_type="gz").cpu().numpy().flatten(order="F") 
+            x = x.squeeze().cpu().numpy().flatten(order="F")  # Input is now 3-channel [gx, gy, gz] 
             pred_y = pred_y[0].permute(2,1,0).reshape(-1).cpu().numpy().flatten(order="F")  # denorm(pred_y[0].permute(2,1,0).reshape(-1), stats, data_type="rho").cpu().numpy().flatten(order="F")
             plt.hist(pred_y, bins=50, alpha=0.5, label="Predicted"
                      )
@@ -43,7 +43,7 @@ def eval_nn(net: torch.nn.Module, dl: torch.utils.data.DataLoader,
             ds.dataset.transform = None
             g_idx = ds.indices[idx]
             sample_data = ds.dataset[g_idx]
-            rx, true_x = sample_data['receiver_locations'].cpu().numpy(), sample_data['gz'].cpu().numpy()
+            rx, true_x = sample_data['receiver_locations'].cpu().numpy(), sample_data['gz'].cpu().numpy()  # Still use gz for validation
             ind = sample_data['ind_active'].cpu().numpy().astype(bool)
             true_y = np.zeros_like(ind, float)
             true_y[ind] = sample_data['true_model'].cpu().numpy()
@@ -95,13 +95,13 @@ def eval_hybrid(net: torch.nn.Module, dl: torch.utils.data.DataLoader, stats: di
                 x_tensor = x.to(device)
                 nn_pred = net(x_tensor)
                 nn_m0 = nn_pred[0].permute(2,1,0).reshape(-1).cpu().numpy().flatten(order="F")  # denorm(nn_pred[0].permute(2,1,0).reshape(-1), stats, data_type="rho").cpu().numpy().flatten(order="F")
-            x = x.squeeze(0).cpu().numpy().flatten()  # denorm(x.squeeze(0), stats, "gz").cpu().numpy().flatten()
+            x = x.squeeze(0).cpu().numpy().flatten()  # Input is now 3-channel [gx, gy, gz]
             true_y = true_y.squeeze(0).cpu().numpy().flatten(order="F")  # denorm(true_y.squeeze(0), stats, "rho").cpu().numpy().flatten(order="F")
             ds = dl.dataset.dataset
             ds.transform = None
             g_idx = dl.dataset.indices[local_idx]
             sample_data = ds[g_idx]
-            rx, true_x = sample_data['receiver_locations'].cpu().numpy(), sample_data['gz'].cpu().numpy()
+            rx, true_x = sample_data['receiver_locations'].cpu().numpy(), sample_data['gz'].cpu().numpy()  # Still use gz for validation
             ind = sample_data['ind_active'].cpu().numpy().astype(bool)
             mesh = create_mesh(bounds=((0, ds.shape_cells[0]*ds.hx[0]), 
                                     (0, ds.shape_cells[1]*ds.hy[0]), 
@@ -141,7 +141,7 @@ def eval_hybrid(net: torch.nn.Module, dl: torch.utils.data.DataLoader, stats: di
             x_tensor = x.unsqueeze(0).to(device)
             nn_pred = net(x_tensor)
             nn_m0 = nn_pred[0].permute(2,1,0).reshape(-1).cpu().numpy().flatten(order="F")  # denorm(nn_pred[0].permute(2,1,0).reshape(-1), stats, data_type="rho").cpu().numpy().flatten(order="F")
-        x = x.squeeze(0).cpu().numpy().flatten()  # denorm(x.squeeze(0), stats, "gz").cpu().numpy().flatten()
+        x = x.squeeze(0).cpu().numpy().flatten()  # Input is now 3-channel [gx, gy, gz]
         true_y = true_y.squeeze(0).cpu().numpy().flatten(order="F")  # denorm(true_y.squeeze(0), stats, "rho").cpu().numpy().flatten(order="F")
         ds = dl.dataset.dataset
         ds.transform = None
@@ -214,13 +214,13 @@ def eval_bayesian(dl: torch.utils.data.DataLoader, stats: dict,
         for local_idx, (x, true_y) in enumerate(iterator):
             if max_samples is not None and local_idx >= max_samples:
                 break
-            x = x.squeeze(0).cpu().numpy().flatten()  # denorm(x.squeeze(0), stats, "gz").cpu().numpy().flatten()
+            x = x.squeeze(0).cpu().numpy().flatten()  # Input is now 3-channel [gx, gy, gz]
             true_y = true_y.squeeze(0).cpu().numpy().flatten(order="F")  # denorm(true_y.squeeze(0), stats, "rho").cpu().numpy().flatten(order="F")
             ds = dl.dataset.dataset
             ds.transform = None
             g_idx = dl.dataset.indices[local_idx]
             sample_data = ds[g_idx]
-            rx, true_x = sample_data['receiver_locations'].cpu().numpy(), sample_data['gz'].cpu().numpy()
+            rx, true_x = sample_data['receiver_locations'].cpu().numpy(), sample_data['gz'].cpu().numpy()  # Still use gz for validation
             ind = sample_data['ind_active'].cpu().numpy().astype(bool)
             mesh = create_mesh(bounds=((0, ds.shape_cells[0]*ds.hx[0]), 
                                     (0, ds.shape_cells[1]*ds.hy[0]), 
@@ -265,7 +265,7 @@ def eval_bayesian(dl: torch.utils.data.DataLoader, stats: dict,
             metrics.update(true_y, pred_y)
     else:
         x, true_y, _, _ = dl.dataset[idx]
-        x = x.squeeze(0).cpu().numpy().flatten()  # denorm(x.squeeze(0), stats, "gz").cpu().numpy().flatten()
+        x = x.squeeze(0).cpu().numpy().flatten()  # Input is now 3-channel [gx, gy, gz]
         true_y = true_y.squeeze(0).cpu().numpy().flatten(order="F")  # denorm(true_y.squeeze(0), stats, "rho").cpu().numpy().flatten(order="F")
         ds = dl.dataset.dataset
         ds.transform = None

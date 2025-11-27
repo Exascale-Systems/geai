@@ -2,10 +2,10 @@ device = 'cuda:5'
 lr = 3e-4
 wd = 0.0
 batch_size = 8
-max_epochs = 200
+max_epochs = 120
 min_loss = 1e-6
 eval_interval = 10
-accuracy = 5e-1 # noise floor
+accuracy = 5e-3 # noise floor
 confidence = 0.95 # confidence level for noise
 
 from tqdm.auto import tqdm

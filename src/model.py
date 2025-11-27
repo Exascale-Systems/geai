@@ -25,7 +25,7 @@ class Encoder2D(nn.Module):
     def __init__(self):
         super().__init__()
         ch = [128, 256, 512, 1024]
-        self.first = down2d(1, ch[0])
+        self.first = down2d(3, ch[0])
         stages = []
         in_c = ch[0]
         for out_c in ch[1:]:
@@ -75,12 +75,12 @@ class GravInvNet(nn.Module):
         self.enc = Encoder2D()
         self.dim = DimTransform(self.enc.out_channels)
         self.dec = Decoder3D(self.enc.out_channels)
-    def forward(self, gz):
+    def forward(self, gravity_data):
         """
-        gz:   (B,C,32,32)
-        pred: (B,16,32,32)
+        gravity_data: (B,3,32,32) -> [gx, gy, gz]
+        pred:         (B,16,32,32)
         """
-        f2 = self.enc(gz)
+        f2 = self.enc(gravity_data)
         assert f2.shape[-2:] == (2, 2), f"Encoder produced {f2.shape}"
         f3 = self.dim(f2)
         pred = self.dec(f3)

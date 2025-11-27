@@ -34,6 +34,8 @@ class MasterDataset(Dataset):
         s = f["samples"][k]
         sample = {
             "seed": torch.tensor(int(s.attrs.get("seed", int(k))), dtype=torch.int32),
+            "gx": torch.as_tensor(s["gravity_data"][0::9], dtype=torch.float32, device=self.device),
+            "gy": torch.as_tensor(s["gravity_data"][1::9], dtype=torch.float32, device=self.device),
             "gz": torch.as_tensor(s["gravity_data"][2::9], dtype=torch.float32, device=self.device),
             "receiver_locations": torch.as_tensor(s["receiver_locations"][:], dtype=torch.float32, device=self.device),
             "true_model": torch.as_tensor(s["true_model"][:], dtype=torch.float32, device=self.device),
@@ -96,25 +98,30 @@ def make_transform(shape_cells, stats, noise=(0, 0)):
     """
     Transform generator output (already torch tensors) into model-ready tensors.
     Produces:
-      x: (2, ny, nx)  -> [gz_norm, h_norm]
+      x: (3, ny, nx)  -> [gx, gy, gz]
       y: (nz, ny, nx) -> normalized true_model
       m: (nz, ny, nx) -> bool mask
     """
     nx, ny, nz = map(int, shape_cells)
 
     def to_tensors(sample):
-        g = sample["gz"]
+        gx = sample["gx"]
+        gy = sample["gy"]
+        gz = sample["gz"]
         t = sample["true_model"]
-        n = add_noise(g.shape, accuracy=noise[0], confidence=noise[1]) #data augementation of noise
-        g+=n
-        # gz = norm(g, stats["gz_min"], stats["gz_max"])
-        # h = norm(sample["receiver_locations"][:,2], 0, 800) # survey height as a channel
-        dev = g.device
-        # tm = norm(sample["true_model"], stats["rho_min"], stats["rho_max"])
-        a = g.to(dtype=torch.float32, device=dev).view(1, ny, nx)                   
-        # b = h.to(dtype=torch.float32, device=dev).view(1, ny, nx)                     
-        # x = torch.cat([a, b], dim=0)
-        x = a  # single channel
+        # Add noise to all components
+        nx_noise = add_noise(gx.shape, accuracy=noise[0], confidence=noise[1])
+        ny_noise = add_noise(gy.shape, accuracy=noise[0], confidence=noise[1])
+        nz_noise = add_noise(gz.shape, accuracy=noise[0], confidence=noise[1])
+        gx += nx_noise
+        gy += ny_noise
+        gz += nz_noise
+        dev = gx.device
+        # Create 3-channel input tensor
+        gx_chan = gx.to(dtype=torch.float32, device=dev).view(1, ny, nx)
+        gy_chan = gy.to(dtype=torch.float32, device=dev).view(1, ny, nx)
+        gz_chan = gz.to(dtype=torch.float32, device=dev).view(1, ny, nx)
+        x = torch.cat([gx_chan, gy_chan, gz_chan], dim=0)  # 3 channels
         y = t.to(dtype=torch.float32, device=dev).reshape(nx, ny, nz).permute(2, 1, 0).contiguous()
         m = torch.as_tensor(sample["ind_active"]).to(device=dev).reshape(nx, ny, nz).permute(2, 1, 0).contiguous().to(torch.bool)
         return x, y, m, sample["seed"]

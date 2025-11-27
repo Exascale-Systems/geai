@@ -29,16 +29,25 @@ def add_noise(shape, accuracy, confidence=0.95, seed=0):
     return rng.normal(0.0, sigma, size=shape)
 
 def compute_stats(h5_path):
-    gz_min, gz_max, rho_min, rho_max = math.inf, -math.inf, math.inf, -math.inf
+    gx_min, gx_max = math.inf, -math.inf
+    gy_min, gy_max = math.inf, -math.inf
+    gz_min, gz_max = math.inf, -math.inf
+    rho_min, rho_max = math.inf, -math.inf
     with h5py.File(h5_path, "r") as f:
         for s in f["samples"].values():
-            gz = s["gravity_data"][()]
+            gravity_data = s["gravity_data"][()]
+            gx = gravity_data[0::9]  # Extract gx component
+            gy = gravity_data[1::9]  # Extract gy component
+            gz = gravity_data[2::9]  # Extract gz component
+            gx_min, gx_max = min(gx_min, gx.min()), max(gx_max, gx.max())
+            gy_min, gy_max = min(gy_min, gy.min()), max(gy_max, gy.max())
             gz_min, gz_max = min(gz_min, gz.min()), max(gz_max, gz.max())
             tm = s["true_model"][()]
             vals = tm
             if vals.size:
                 rho_min, rho_max = min(rho_min, vals.min()), max(rho_max, vals.max())
-    return dict(gz_min=gz_min, gz_max=gz_max, rho_min=rho_min, rho_max=rho_max)
+    return dict(gx_min=gx_min, gx_max=gx_max, gy_min=gy_min, gy_max=gy_max, 
+                gz_min=gz_min, gz_max=gz_max, rho_min=rho_min, rho_max=rho_max)
 
 def norm(a, a0, a1): 
     a = torch.as_tensor(a)
@@ -51,6 +60,12 @@ def denorm(y_norm, stats, data_type="rho"):
     if data_type == "rho":
         a = torch.as_tensor(stats["rho_min"], dtype=y.dtype, device=y.device)
         b = torch.as_tensor(stats["rho_max"], dtype=y.dtype, device=y.device)
+    elif data_type == "gx":
+        a = torch.as_tensor(stats["gx_min"], dtype=y.dtype, device=y.device)
+        b = torch.as_tensor(stats["gx_max"], dtype=y.dtype, device=y.device)
+    elif data_type == "gy":
+        a = torch.as_tensor(stats["gy_min"], dtype=y.dtype, device=y.device)
+        b = torch.as_tensor(stats["gy_max"], dtype=y.dtype, device=y.device)
     elif data_type == "gz":
         a = torch.as_tensor(stats["gz_min"], dtype=y.dtype, device=y.device)
         b = torch.as_tensor(stats["gz_max"], dtype=y.dtype, device=y.device)
@@ -73,9 +88,9 @@ class TorchMetrics:
         self.n_samples = 0
 
     @torch.no_grad()
-    def update(self, net, gz, tgt, denorm_fn):
+    def update(self, net, gravity_data, tgt, denorm_fn):
         """Accumulate metrics for a single batch."""
-        pred = net(gz)
+        pred = net(gravity_data)
         # Skip denormalization since data is not normalized
         pred_denorm = pred  # denorm_fn(pred, self.stats)
         tgt_denorm = tgt    # denorm_fn(tgt, self.stats)
