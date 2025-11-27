@@ -160,6 +160,9 @@ The generation of this dataset relies on a [forked version](https://github.com/k
 #### Mark McLean '3D inversion modelling of Full Spectrum FALCON® airborne gravity data over Otway Basin'
 - https://www.youtube.com/watch?v=FwN9O1AnS3g&t=764s (mira & xcalibur)
     - terrain correction
-    - ![alt text](documentation/image-1.png)
     - dtu15 free-air satellite dataset
     - potential field models
+
+[FTG](https://www.bellgeo.com/)
+
+[ACG](https://xcaliburmp.com/technology/airborne-gravity-gradiometry/)
