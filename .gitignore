@@ -5,3 +5,4 @@ data/*
 checkpoints/*
 models/*
 logs/*
+studies/*

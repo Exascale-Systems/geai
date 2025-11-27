@@ -334,26 +334,41 @@ def eval_bayesian(dl: torch.utils.data.DataLoader, stats: dict,
         'n_samples': 1 if idx is not None else len(dl.dataset)
     }
 
-def eval(eval: str = "nn", split: str = "va", bs: int = 8 if eval == "nn" else 1, 
-         idx: int = None, max_samples: int = None, accuracy: float = 0.001, confidence: float = 0.95):
-    print(f"Eval: {eval}, Split: {split}, Index: {f'{max_samples if max_samples is not None else "All"}' if idx is None else idx}, Accuracy: {accuracy}, Confidence: {confidence}")
-    tr_ld, va_ld, stats = data_prep(ds_name="single_block_v2", split_name="single_block_v2", bs=bs if eval == "nn" else 1, 
+def _eval(eval: str = "nn", split: str = "va", bs: int = 8 if eval == "nn" else 1, 
+         idx: int = None, max_samples: int = None, accuracy: float = 0.001, confidence: float = 0.95, 
+         accuracy_loop: bool = False):
+        tr_ld, va_ld, stats = data_prep(ds_name="single_block_v2", split_name="single_block_v2", bs=bs if eval == "nn" else 1, 
                                     accuracy=accuracy, confidence=confidence, load_splits=True, transform=True)
-    dl = {"tr": tr_ld, "va": va_ld}.get(split)
-    if dl is None:
-        print("Invalid split name")
-        return None 
-    eval_funcs = {
-        "nn": lambda: (lambda net, device: eval_nn(net=net, dl=dl, stats=stats, device=device, threshold=0.1, idx=idx))(*load_model(model_name="single_block_05", device="cuda:5")),
-        "bayesian": lambda: eval_bayesian(dl=dl, stats=stats, idx=idx, threshold=0.012, max_samples=max_samples, accuracy=accuracy, confidence=confidence),
-        "hybrid": lambda: (lambda net, device: eval_hybrid(net=net, dl=dl, stats=stats, device=device, threshold=0.1, idx=idx, max_samples=max_samples, accuracy=accuracy, confidence=confidence))(*load_model(model_name="single_block_05", device="cuda:5"))
-    }
-    if eval not in eval_funcs: 
-        print("Invalid eval")
-        return None
-    metrics = eval_funcs[eval]()
-    print(metrics)
-    return metrics
+        dl = {"tr": tr_ld, "va": va_ld}.get(split)
+        print(f"Eval: {eval}, Split: {split}, Index: {f'{max_samples if max_samples is not None else "All"}' if idx is None else idx}, Accuracy: {accuracy}, Confidence: {confidence}")
+        if dl is None:
+            print("Invalid split name")
+            return None 
+        eval_funcs = {
+            "nn": lambda: (lambda net, device: eval_nn(net=net, dl=dl, stats=stats, device=device, threshold=0.1, idx=idx))(*load_model(model_name="single_block_500", device="cuda:5")),
+            "bayesian": lambda: eval_bayesian(dl=dl, stats=stats, idx=idx, threshold=0.012, max_samples=max_samples, accuracy=accuracy, confidence=confidence),
+            "hybrid": lambda: (lambda net, device: eval_hybrid(net=net, dl=dl, stats=stats, device=device, threshold=0.1, idx=idx, max_samples=max_samples, accuracy=accuracy, confidence=confidence))(*load_model(model_name="single_block_05", device="cuda:5"))
+        }
+        if eval not in eval_funcs: 
+            print("Invalid eval")
+            return None
+        if accuracy_loop:
+            import csv
+            accuracies = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1]
+            with open("accuracy_results.csv", "w", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(["accuracy", "rmse", "l1", "iou", "dice", "n_samples"])
+                for acc in accuracies:
+                    print(f"Running accuracy: {acc}")
+                    metrics = _eval(eval=eval, split=split, bs=bs, idx=idx, max_samples=max_samples, 
+                                   accuracy=acc, confidence=confidence, accuracy_loop=False)
+                    if metrics:
+                        writer.writerow([acc, metrics["rmse"], metrics["l1"], metrics["iou"], metrics["dice"], metrics["n_samples"]])
+            print("Done. Results saved to accuracy_results.csv")
+            return None
+        metrics = eval_funcs[eval]()
+        print(metrics)
+        return metrics
 
 if __name__ == "__main__":
-    eval(eval="nn", split="va", idx=None, max_samples=None, accuracy=0.0001, confidence=0.95)
+    _eval(eval="nn", split="va", idx=None, max_samples=None, accuracy=None, confidence=0.95, accuracy_loop=True)
