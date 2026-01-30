@@ -11,6 +11,7 @@ def main():
         "max_epochs": 200,
         "min_loss": 1e-6,
         "eval_interval": 10,
+        "components": ("gz",),
     }
 
     accuracy = 5e-1
@@ -25,10 +26,11 @@ def main():
         transform=True,
         accuracy=accuracy,
         confidence=confidence,
+        components=config["components"],
     )
 
     # Init Model
-    net = GravInvNet()
+    net = GravInvNet(in_channels=len(config["components"]))
 
     # Train
     train_model(net, tr_ld, va_ld, stats, config)

@@ -26,9 +26,9 @@ from torch.utils.data import Dataset, DataLoader, Subset
 from typing import cast, Any
 
 
-def load_model(model_name, device="cpu"):
+def load_model(model_name, device="cpu", in_channels=1):
     device = torch.device(device)
-    model = GravInvNet().to(device)
+    model = GravInvNet(in_channels=in_channels).to(device)
     if Path(f"models/{model_name}.pt").exists():
         state = torch.load(f"models/{model_name}.pt", map_location=device)
         model.load_state_dict(state.get("model", state))
@@ -78,7 +78,12 @@ def eval_nn(
                 results["Dice"],
             )
             pred_y = net(x)
-            x = x.squeeze().cpu().numpy().flatten(order="F")
+            # Handle multi-channel input for plotting (take first channel)
+            x_plot = x.squeeze(0)  # (C, ny, nx) or (ny, nx) if C=1
+            if x_plot.dim() == 3:
+                x_plot = x_plot[0]  # Take first component
+            x_plot = x_plot.cpu().numpy().flatten(order="F")
+
             pred_y = (
                 pred_y[0].permute(2, 1, 0).reshape(-1).cpu().numpy().flatten(order="F")
             )
@@ -90,7 +95,7 @@ def eval_nn(
             sample_data = ds_dataset[g_idx]
             rx, true_x = (
                 sample_data["receiver_locations"].cpu().numpy(),
-                sample_data["gz"].cpu().numpy(),
+                sample_data["gravity"][0].cpu().numpy(),  # Take first component
             )
             ind = sample_data["ind_active"].cpu().numpy().astype(bool)
             true_y = np.zeros_like(ind, float)
@@ -114,9 +119,9 @@ def eval_nn(
                 engine="choclo",
             )
             preq_x = sim.dpred(pred_y)
-            plot_gravity_measurements(rx, true_x, title="True Gravity Data (gz)")
+            plot_gravity_measurements(rx, true_x, title="True Gravity Data (1st Comp)")
             plot_density_contrast_3D(mesh, ind, true_y)
-            plot_gravity_measurements(rx, x, title="Input Gravity Data (x)")
+            plot_gravity_measurements(rx, x_plot, title="Input Gravity Data (1st Comp)")
             plot_density_contrast_3D(mesh, ind, pred_y)
             plot_gravity_measurements(rx, preq_x, title="Predicted Gravity Data (y)")
             input("Press Enter to close plots...")
@@ -494,6 +499,7 @@ def _eval(
     accuracy: float | None = 0.001,
     confidence: float = 0.95,
     accuracy_loop: bool = False,
+    components: tuple = ("gz",),
 ):
     if accuracy is None:
         accuracy = 0.001
@@ -505,17 +511,20 @@ def _eval(
         confidence=confidence,
         load_splits=True,
         transform=True,
+        components=components,
     )
     dl = {"tr": tr_ld, "va": va_ld}.get(split)
     print(
-        f"Eval: {eval}, Split: {split}, Index: {f'{max_samples if max_samples is not None else "All"}' if idx is None else idx}, Accuracy: {accuracy}, Confidence: {confidence}"
+        f"Eval: {eval}, Split: {split}, Index: {f'{max_samples if max_samples is not None else "All"}' if idx is None else idx}, Accuracy: {accuracy}, Confidence: {confidence}, Components: {components}"
     )
     if dl is None:
         print("Invalid split name")
         return None
 
     def run_nn():
-        model, device = load_model(model_name="single_block_500", device="cuda:5")
+        model, device = load_model(
+            model_name="single_block_500", device="cuda:5", in_channels=len(components)
+        )
         return eval_nn(
             net=model, dl=dl, stats=stats, device=device, threshold=0.1, idx=idx
         )
@@ -568,6 +577,7 @@ def _eval(
                     accuracy=acc,
                     confidence=confidence,
                     accuracy_loop=False,
+                    components=components,
                 )
                 if metrics:
                     writer.writerow(

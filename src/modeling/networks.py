@@ -35,10 +35,10 @@ class ResBlock2D(nn.Module):
 
 
 class Encoder2D(nn.Module):
-    def __init__(self):
+    def __init__(self, in_channels=1):
         super().__init__()
         ch = [128, 256, 512, 1024]
-        self.first = down2d(1, ch[0])
+        self.first = down2d(in_channels, ch[0])
         stages = []
         in_c = ch[0]
         for out_c in ch[1:]:
@@ -91,9 +91,9 @@ class Decoder3D(nn.Module):
 
 # --- Main Network ---
 class GravInvNet(nn.Module):
-    def __init__(self):
+    def __init__(self, in_channels=1):
         super().__init__()
-        self.enc = Encoder2D()
+        self.enc = Encoder2D(in_channels=in_channels)
         self.dim = DimTransform(self.enc.out_channels)
         self.dec = Decoder3D(self.enc.out_channels)
 

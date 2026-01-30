@@ -7,11 +7,28 @@ from src.data.transforms import compute_stats, norm, denorm, add_noise
 from typing import cast, Any
 
 
+COMPONENT_MAP = {
+    "gx": 0,
+    "gy": 1,
+    "gz": 2,
+    "gxx": 3,
+    "gxy": 4,
+    "gxz": 5,
+    "gyy": 6,
+    "gyz": 7,
+    "gzz": 8,
+}
+
+
 class MasterDataset(Dataset):
-    def __init__(self, master_path: str, transform=None, device: str = "cpu"):
+    def __init__(
+        self, master_path: str, transform=None, device: str = "cpu", components=("gz",)
+    ):
         self.master_path = master_path
         self.transform = transform
         self.device = torch.device(device)
+        self.components = components
+        self.component_indices = [COMPONENT_MAP[c] for c in components]
         self._f = None
         with h5py.File(self.master_path, "r") as f:
             # Cast to Any to avoid h5py typing issues
@@ -42,11 +59,23 @@ class MasterDataset(Dataset):
     def __getitem__(self, idx):
         f = self._require_file()
         k, s = self.__subgetitem__(idx, f)
+
+        # Extract specific components
+        # s["gravity_data"] is (N_receivers * 9)
+        # We assume interleaved data: gx, gy, gz, ...
+        # We can extract each component using slicing [idx::9]
+        gravity_list = []
+        raw_gravity = s["gravity_data"]
+        for c_idx in self.component_indices:
+            gravity_list.append(
+                torch.as_tensor(
+                    raw_gravity[c_idx::9], dtype=torch.float32, device=self.device
+                )
+            )
+
         sample = {
             "seed": torch.tensor(int(s.attrs.get("seed", int(k))), dtype=torch.int32),
-            "gz": torch.as_tensor(
-                s["gravity_data"][2::9], dtype=torch.float32, device=self.device
-            ),
+            "gravity": torch.stack(gravity_list, dim=0),  # (C, N_receivers)
             "receiver_locations": torch.as_tensor(
                 s["receiver_locations"][:], dtype=torch.float32, device=self.device
             ),
@@ -89,22 +118,23 @@ def make_transform(shape_cells, stats, noise=(0, 0)):
     """
     Transform generator output (already torch tensors) into model-ready tensors.
     Produces:
-      x: (2, ny, nx)  -> [gz_norm, h_norm]
+      x: (C, ny, nx)  -> [gravity_norm]
       y: (nz, ny, nx) -> normalized true_model
       m: (nz, ny, nx) -> bool mask
     """
     nx, ny, nz = map(int, shape_cells)
 
     def to_tensors(sample):
-        g = sample["gz"]
+        g = sample["gravity"]
         t = sample["true_model"]
         n = add_noise(
             g.shape, accuracy=noise[0], confidence=noise[1]
         )  # data augementation of noise
         g += n
         dev = g.device
-        a = g.to(dtype=torch.float32, device=dev).view(1, ny, nx)
-        x = a  # single channel
+        C = g.shape[0]
+        a = g.to(dtype=torch.float32, device=dev).view(C, ny, nx)
+        x = a
         y = (
             t.to(dtype=torch.float32, device=dev)
             .reshape(nx, ny, nz)
@@ -132,18 +162,20 @@ def data_prep(
     transform: bool = True,
     accuracy: float = 0.01,
     confidence: float = 0.95,
+    components: tuple = ("gz",),
 ):
     """
     return training dataset, validation dataset, and stats required for normalization.
     """
     stats = compute_stats(f"data/{ds_name}.h5")  # calculate distribution of data
-    ds = MasterDataset(f"data/{ds_name}.h5")  # load dataset
+    ds = MasterDataset(f"data/{ds_name}.h5", components=components)  # load dataset
     if transform:
         ds.transform = make_transform(
             ds.shape_cells, stats, noise=(accuracy, confidence)
         )
     else:
         ds.transform = None
+
     if load_splits and Path(f"splits/{split_name}.npz").exists():
         splits = np.load(f"splits/{split_name}.npz")
         tr_indices, va_indices = splits["tr"], splits["va"]
