@@ -1,3 +1,8 @@
+import sys
+import os
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
+
 from src.data.dataset import data_prep
 from src.training.engine import train_model
 from src.modeling.networks import GravInvNet
@@ -5,7 +10,7 @@ from src.modeling.networks import GravInvNet
 
 def main():
     config = {
-        "device": "cuda:5",
+        "device": "cpu",
         "lr": 3e-4,
         "wd": 0.0,
         "max_epochs": 200,

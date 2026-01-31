@@ -1,3 +1,8 @@
+import sys
+import os
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
+
 import numpy as np
 from scipy.interpolate import LinearNDInterpolator
 from src.utils import add_noise
@@ -5,7 +10,8 @@ from discretize import TensorMesh
 from discretize.utils import active_from_xyz
 from simpeg import maps
 from simpeg.potential_fields import gravity
-from StructuralGeo.src.geogen.dataset import GeoData3DStreamingDataset  
+from StructuralGeo.src.geogen.dataset import GeoData3DStreamingDataset
+
 
 def get_sample(dataset, k):
     """
@@ -13,14 +19,17 @@ def get_sample(dataset, k):
     """
     return dataset.__getitem__(k)[1, ...].squeeze(0).numpy()
 
+
 def create_topo(
-        density,                                 # density array (N,3)   
-        x_dom=1.6e3, y_dom=1.6e3, z_dom=0.8e3   # domain size in x/y (m)
-    ):
+    density,  # density array (N,3)
+    x_dom=1.6e3,
+    y_dom=1.6e3,
+    z_dom=0.8e3,  # domain size in x/y (m)
+):
     """Return (N,3) synthetic topography points from StructuralGeo synthetic model."""
     xs = np.linspace(0, x_dom, int(round(density.shape[0])))
     ys = np.linspace(0, y_dom, int(round(density.shape[1])))
-    zs = np.linspace(0, z_dom, int(round(density.shape[2])+1))
+    zs = np.linspace(0, z_dom, int(round(density.shape[2]) + 1))
     X, Y = np.meshgrid(xs, ys, indexing="xy")
     switch_mask = (density[:, :, :-1] > 0) & (density[:, :, 1:] <= 0)
     z_centers = 0.5 * (zs[:-1] + zs[1:])
@@ -31,20 +40,19 @@ def create_topo(
             if len(idx) > 0:
                 Z_switch[i, j] = z_centers[idx[0]]
     Z_switch = np.where(np.isnan(Z_switch), 0.0, Z_switch)
-    topo_xyz = np.c_[X.ravel(), Y.ravel(), Z_switch.ravel()]   
+    topo_xyz = np.c_[X.ravel(), Y.ravel(), Z_switch.ravel()]
     return np.flip(topo_xyz, 0)
 
-def create_mesh(
-        bounds = ((0, 3.2e4), (0, 3.2e4), (0, 1.6e4)),
-        resolution = (32, 32, 16)
-    ):
+
+def create_mesh(bounds=((0, 3.2e4), (0, 3.2e4), (0, 1.6e4)), resolution=(32, 32, 16)):
     """
     Returns tensor with origin (0, 0, 0) where x and y is +ve and z is -ve.
     """
     hx = [(bounds[0][1] / resolution[0], resolution[0])]
-    hy = [(bounds[1][1]  / resolution[1], resolution[1])]
-    hz = [(bounds[2][1]  / resolution[2], resolution[2])]
+    hy = [(bounds[1][1] / resolution[1], resolution[1])]
+    hz = [(bounds[2][1] / resolution[2], resolution[2])]
     return TensorMesh([hx, hy, hz], "00N")
+
 
 def init_model(mesh, topo_xyz, background_density=0.0):
     """
@@ -56,10 +64,11 @@ def init_model(mesh, topo_xyz, background_density=0.0):
     true_model = background_density * np.ones(nC)
     return ind_active, nC, model_map, true_model
 
+
 def gravity_survey(
     topo_xyz,
-    components=("gz",),        # gravity components to measure
-    ):
+    components=("gz",),  # gravity components to measure
+):
     """
     Build receiver grid at topography surface; returns (receiver_locations, survey).
     """
@@ -73,10 +82,14 @@ def gravity_survey(
 def main():
     bounds = ((0, 3.2e4), (0, 3.2e4), (0, 1.6e4))
     resolution = (32, 32, 16)
-    dataset = GeoData3DStreamingDataset(model_bounds=bounds, model_resolution=resolution)
+    dataset = GeoData3DStreamingDataset(
+        model_bounds=bounds, model_resolution=resolution
+    )
     model = get_sample(dataset, 6)
     mesh = create_mesh(bounds, resolution)
-    topo_xyz = create_topo(model, x_dom=bounds[0][1], y_dom=bounds[1][1], z_dom=bounds[2][1])
+    topo_xyz = create_topo(
+        model, x_dom=bounds[0][1], y_dom=bounds[1][1], z_dom=bounds[2][1]
+    )
     ind_active, nC, model_map, _ = init_model(mesh, topo_xyz)
     model = model.ravel(order="F")
     receiver_locations, survey = gravity_survey(topo_xyz, components=("gz",))
@@ -90,22 +103,30 @@ def main():
     y = sim.dpred(model)
     y += add_noise(y.shape, accuracy=0.05, confidence=0.95, seed=0)
     import matplotlib.pyplot as plt
+
     plt.hist(y, bins=100, density=False, alpha=0.7)
     plt.show()
     try:
-        from src.plot import (
+        from src.vis import (
             plot_topography,
             plot_density_contrast_3D,
             plot_gravity_measurements,
         )
+
         plot_topography(topo_xyz)
         plot_density_contrast_3D(mesh, ind_active, model)
         plot_gravity_measurements(receiver_locations, y)
     except Exception as e:
         print("[plot skipped]", e)
     return dict(
-        mesh=mesh, ind_active=ind_active, model=model, survey=survey, receivers=receiver_locations, sim=sim
-        )
+        mesh=mesh,
+        ind_active=ind_active,
+        model=model,
+        survey=survey,
+        receivers=receiver_locations,
+        sim=sim,
+    )
+
 
 if __name__ == "__main__":
     main()

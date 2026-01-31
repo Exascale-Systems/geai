@@ -1,4 +1,4 @@
-from src.simulation import generators
+from . import generators
 from src.simulation.simulator import GravitySimulator
 
 
