@@ -6,3 +6,5 @@ checkpoints/*
 models/*
 logs/*
 results/*
+.direnv/*
+.envrc
