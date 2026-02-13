@@ -3,6 +3,7 @@ import torch.nn as nn
 from tqdm.auto import tqdm
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
+from torch.amp.grad_scaler import GradScaler
 from src.training.evaluation import eval_nn
 
 
@@ -65,7 +66,7 @@ def train_model(net, tr_ld: DataLoader, va_ld: DataLoader, stats: dict, config: 
     net = net.to(dev)
     opt = torch.optim.Adam(net.parameters(), lr=lr, weight_decay=wd)
     crit = nn.MSELoss()
-    scaler = torch.amp.GradScaler("cuda")
+    scaler = GradScaler("cuda")
     writer = SummaryWriter("logs")
 
     pbar = tqdm(range(0, max_epochs), desc="training", ncols=100)
