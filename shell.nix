@@ -5,49 +5,23 @@
 pkgs.mkShell {
   name = "gravity-sims-env";
 
-  packages = with pkgs.python312Packages; [
-    python
-    venvShellHook
-
-    # Core Dependencies (from Nixpkgs)
-    numpy
-    scipy
-    matplotlib
-    h5py
-    torch
-    tqdm
-    pyqt5
-    tensorboard
-    pyvista
-
-    # Qt dependencies for visualization
-    pkgs.qt5.qtbase
-    pkgs.qt5.qtwayland
-    pkgs.qt5.qtx11extras
+  buildInputs = with pkgs; [
+    python312
+    python312Packages.pip
+    python312Packages.virtualenv
 
     # System dependencies for compiling/running pip wheels
-    pkgs.stdenv.cc.cc.lib
-    pkgs.libGL
-    pkgs.zlib
-    pkgs.glib
-  ];
+    stdenv.cc.cc.lib
+    libGL
+    zlib
+    glib
+    gcc
+    pkg-config
 
-  # Automatically create and enter a virtual environment
-  venvDir = "./.venv";
-
-  # Install dependencies not in Nixpkgs (like simpeg, choclo) from requirements.txt
-  postVenvCreation = ''
-    unset SOURCE_DATE_EPOCH
-    pip install -r requirements.txt
-  '';
-
-  # Ensure compiled libraries referenced by pip packages can be found
-  LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [
-    pkgs.stdenv.cc.cc.lib
-    pkgs.libGL
-    pkgs.zlib
-    pkgs.glib
-    pkgs.qt5.qtbase
+    # Qt dependencies for visualization
+    qt5.qtbase
+    qt5.qtwayland
+    qt5.qtx11extras
   ];
 
   shellHook = ''
@@ -55,6 +29,22 @@ pkgs.mkShell {
     export QT_QPA_PLATFORM="offscreen"
     export PYVISTA_OFF_SCREEN="true"
     export DISPLAY=""
-    echo "Qt platform set to offscreen for headless rendering"
+
+    # Create venv if it doesn't exist
+    if [ ! -d ".venv" ]; then
+      echo "Creating virtual environment..."
+      python3 -m venv .venv
+    fi
+
+    source .venv/bin/activate
+    echo "Virtual environment activated"
+
+    # Install requirements if venv was just created
+    if [ ! -f ".venv/.installed" ]; then
+      echo "Installing requirements..."
+      pip install --upgrade pip
+      pip install -r requirements.txt
+      touch .venv/.installed
+    fi
   '';
 }
