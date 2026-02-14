@@ -66,7 +66,7 @@ def train_model(net, tr_ld: DataLoader, va_ld: DataLoader, stats: dict, config: 
     net = net.to(dev)
     opt = torch.optim.Adam(net.parameters(), lr=lr, weight_decay=wd)
     crit = nn.MSELoss()
-    scaler = GradScaler("cuda")
+    scaler = GradScaler()
     writer = SummaryWriter("logs")
 
     pbar = tqdm(range(0, max_epochs), desc="training", ncols=100)
