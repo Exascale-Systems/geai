@@ -13,7 +13,7 @@ def main():
         "device": "cuda",
         "lr": 3e-4,
         "wd": 0.0,
-        "max_epochs": 2,
+        "max_epochs": 200,
         "min_loss": 1e-6,
         "eval_interval": 1,
         "components": ("gx", "gy", "gz", "gxx", "gxy", "gxz", "gyy", "gyz", "gzz"),
