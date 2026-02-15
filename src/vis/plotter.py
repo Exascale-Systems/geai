@@ -10,7 +10,7 @@ def plot_topography(topo_xyz):
     p = pv.Plotter()
     p.add_points(pts, render_points_as_spheres=True, point_size=8)
     p.show_bounds(grid="front", xtitle="X", ytitle="Y", ztitle="Z")
-    p.show(auto_close=False, interactive_update=True)
+    p.show()
 
 
 def plot_density_contrast_3D(mesh, ind_active, density_values):
@@ -65,7 +65,7 @@ def plot_density_contrast_3D(mesh, ind_active, density_values):
     p.add_text("Density Contrast (g/cc)", font_size=12, position="upper_edge")
     p.camera_position = "iso"
     p.camera.azimuth += 270
-    p.show(auto_close=False, interactive_update=True)
+    p.show()
 
 
 def plot_gravity_measurements(
@@ -115,7 +115,7 @@ def plot_gravity_measurements(
     p.show_bounds(grid="front", xtitle="x (m)", ytitle="y (m)", ztitle="z (m)")
     p.enable_parallel_projection()
     p.view_xy()
-    p.show(auto_close=False, interactive_update=True)
+    p.show()
 
 
 def plot_gravity_residuals(
@@ -176,7 +176,7 @@ def plot_gravity_residuals(
     p.show_bounds(grid="front", xtitle="x (m)", ytitle="y (m)", ztitle="z (m)")
     p.enable_parallel_projection()
     p.view_xy()
-    p.show(auto_close=False, interactive_update=True)
+    p.show()
 
 
 def plot_density_slices(
@@ -262,7 +262,7 @@ def plot_density_slices(
         p.show_bounds(grid="front", xtitle=xlabel, ytitle=ylabel)
         p.enable_parallel_projection()
         p.view_xy()
-    p.show(auto_close=False, interactive_update=True)
+    p.show()
 
 
 def plot_density_slice_residuals(
@@ -373,4 +373,4 @@ def plot_density_slice_residuals(
         p.show_bounds(grid="front", xtitle=xlabel, ytitle=ylabel)
         p.enable_parallel_projection()
         p.view_xy()
-    p.show(auto_close=False, interactive_update=True)
+    p.show()

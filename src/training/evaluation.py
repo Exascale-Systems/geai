@@ -92,8 +92,17 @@ def eval_nn(
             pred_y_np = (
                 pred_y[0].permute(2, 1, 0).reshape(-1).cpu().numpy().flatten(order="F")
             )
-            plt.hist(pred_y_np, bins=50, alpha=0.5, label="Predicted")
-            plt.show()
+
+            # Plot and show histogram
+            fig, ax = plt.subplots(figsize=(10, 6))
+            ax.hist(pred_y_np, bins=50, alpha=0.5, label="Predicted")
+            ax.set_xlabel("Density Value")
+            ax.set_ylabel("Frequency")
+            ax.set_title("Predicted Density Distribution")
+            ax.legend()
+            print("\n>>> Showing density histogram (close window to continue)...")
+            plt.show(block=True)
+            plt.close()
 
             # Deactivate transform to get raw sample data
             ds_dataset = cast(Any, ds.dataset)
@@ -123,17 +132,31 @@ def eval_nn(
                 true_grav = sample_data["gravity"][i].cpu().numpy()
                 pred_grav_comp = preq_x[i * n_rx : (i + 1) * n_rx]
 
+                print(
+                    f"\n>>> Showing True Gravity Data ({comp}) (close window to continue)..."
+                )
                 plot_gravity_measurements(
                     rx, true_grav, title=f"True Gravity Data ({comp})"
+                )
+
+                print(
+                    f">>> Showing Predicted Gravity Data ({comp}) (close window to continue)..."
                 )
                 plot_gravity_measurements(
                     rx, pred_grav_comp, title=f"Predicted Gravity Data ({comp})"
                 )
 
+            print(
+                "\n>>> Showing True Density Contrast 3D (close window to continue)..."
+            )
             plot_density_contrast_3D(mesh, ind, true_model_np)
+
+            print(
+                ">>> Showing Predicted Density Contrast 3D (close window to continue)..."
+            )
             plot_density_contrast_3D(mesh, ind, pred_y_np)
 
-            input("Press Enter to close plots...")
+            print("\nEvaluation complete!")
 
     return {
         "rmse": rmse_val,
