@@ -49,9 +49,6 @@ pkgs.mkShell {
 
   shellHook = ''
     export QT_QPA_PLATFORM_PLUGIN_PATH="${pkgs.qt5.qtbase}/lib/qt-5.15.18/plugins"
-    export QT_QPA_PLATFORM="offscreen"
-    export PYVISTA_OFF_SCREEN="true"
-    export DISPLAY=""
 
     # Create venv with system site packages to access nixpkgs torch
     if [ ! -d ".venv" ]; then
