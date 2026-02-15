@@ -533,14 +533,14 @@ def _eval(
 
     def run_nn():
         model, device = load_model(
-            model_name="single_block_500", device="cuda:5", in_channels=len(components)
+            model_name="single_block_500", device="cuda", in_channels=len(components)
         )
         return eval_nn(
             net=model, dl=dl, stats=stats, device=device, threshold=0.1, idx=idx
         )
 
     def run_hybrid():
-        model, device = load_model(model_name="single_block_05", device="cuda:5")
+        model, device = load_model(model_name="single_block_05", device="cuda")
         return eval_hybrid(
             net=model,
             dl=dl,
