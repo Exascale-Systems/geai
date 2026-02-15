@@ -1,27 +1,50 @@
 {
-  pkgs ? import <nixpkgs> { },
+  pkgs ? import <nixpkgs> {
+    config = {
+      allowUnfree = true;
+      cudaSupport = true;
+    };
+  },
 }:
+
+let
+  # Python with torch from nixpkgs (this has working CUDA)
+  pythonWithTorch = pkgs.python312.withPackages (
+    ps: with ps; [
+      torchWithCuda
+      numpy
+      scipy
+      matplotlib
+      h5py
+      tqdm
+      pyqt5
+      tensorboard
+      pyvista
+      pip
+    ]
+  );
+in
 
 pkgs.mkShell {
   name = "gravity-sims-env";
 
-  buildInputs = with pkgs; [
-    python312
-    python312Packages.pip
-    python312Packages.virtualenv
+  packages = [
+    pythonWithTorch
+    pkgs.uv # Use uv for faster pip installs
 
-    # System dependencies for compiling/running pip wheels
-    stdenv.cc.cc.lib
-    libGL
-    zlib
-    glib
-    gcc
-    pkg-config
+    # System dependencies
+    pkgs.stdenv.cc.cc.lib
+    pkgs.libGL
+    pkgs.zlib
+    pkgs.glib
 
-    # Qt dependencies for visualization
-    qt5.qtbase
-    qt5.qtwayland
-    qt5.qtx11extras
+    # Qt dependencies
+    pkgs.qt5.qtbase
+    pkgs.qt5.qtwayland
+    pkgs.qt5.qtx11extras
+
+    # NVIDIA support
+    pkgs.linuxPackages.nvidia_x11
   ];
 
   shellHook = ''
@@ -30,21 +53,22 @@ pkgs.mkShell {
     export PYVISTA_OFF_SCREEN="true"
     export DISPLAY=""
 
-    # Create venv if it doesn't exist
+    # Create venv with system site packages to access nixpkgs torch
     if [ ! -d ".venv" ]; then
       echo "Creating virtual environment..."
-      python3 -m venv .venv
+      ${pythonWithTorch}/bin/python -m venv --system-site-packages .venv
     fi
 
     source .venv/bin/activate
-    echo "Virtual environment activated"
 
-    # Install requirements if venv was just created
-    if [ ! -f ".venv/.installed" ]; then
-      echo "Installing requirements..."
-      pip install --upgrade pip
-      pip install -r requirements.txt
-      touch .venv/.installed
+    # Install packages not in nixpkgs
+    if ! python -c "import discretize" 2>/dev/null; then
+      echo "Installing discretize, simpeg, choclo..."
+      pip install discretize simpeg choclo
     fi
+
+    echo ""
+    echo "Environment ready! Testing CUDA..."
+    python -c "import torch; print(f'PyTorch: {torch.__version__}'); print(f'CUDA available: {torch.cuda.is_available()}')"
   '';
 }
