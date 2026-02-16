@@ -156,6 +156,9 @@ def eval_nn(
             )
             plot_density_contrast_3D(mesh, ind, pred_y_np)
 
+            print(
+                f"Predicted density stats - min: {pred_y_np.min()}, max: {pred_y_np.max()}, mean: {pred_y_np.mean()}"
+            )
             print("\nEvaluation complete!")
 
     return {
@@ -538,7 +541,9 @@ def _eval(
         accuracy = 0.001
     tr_ld, va_ld, stats = data_prep(
         ds_name="single_block_v2",
-        split_name="single_block_v2",
+        split_name="single_block_v2_all_comps"
+        if len(components) > 1
+        else "single_block_v2",
         bs=bs if eval == "nn" else 1,
         accuracy=accuracy,
         confidence=confidence,

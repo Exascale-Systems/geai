@@ -35,7 +35,7 @@ def generate_batch(
     receiver_locations, survey = gravity_survey(
         topo_xyz=topo_xyz,
         n_per_axis=n_xy,
-        components=("gx", "gy", "gz", "gxx", "gxy", "gxz", "gyy", "gyz", "gzz"),
+        components=("gx", "gy", "gz"),  # Only these 3 work with Choclo engine
     )
     sim = gravity.simulation.Simulation3DIntegral(
         survey=survey,

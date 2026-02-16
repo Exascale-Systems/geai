@@ -13,15 +13,15 @@ def main():
         "device": "cuda",
         "lr": 3e-4,
         "wd": 0.0,
-        "max_epochs": 200,
+        "max_epochs": 20,
         "min_loss": 1e-6,
         "eval_interval": 1,
-        "components": ("gx", "gy", "gz", "gxx", "gxy", "gxz", "gyy", "gyz", "gzz"),
+        "components": ("gx", "gy", "gz"),  # Only these 3 work with Choclo engine
     }
 
     num_components = len(config["components"])
     batch_size = 32
-    split_name = "single_block_v2_all_comps"
+    split_name = "single_block_v2"  # Use standard split with 3 components
 
     accuracy = 5e-1
     confidence = 0.95

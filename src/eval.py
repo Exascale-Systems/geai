@@ -9,9 +9,10 @@ if __name__ == "__main__":
     _eval(
         eval="nn",
         split="va",
-        idx=None,
+        idx=0,
         max_samples=None,
         accuracy=None,
         confidence=0.95,
-        accuracy_loop=True,
+        accuracy_loop=False,
+        components=("gx", "gy", "gz"),  # Only 3 components work with Choclo
     )
