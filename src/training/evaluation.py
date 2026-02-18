@@ -29,8 +29,8 @@ from typing import cast, Any
 def load_model(model_name, device="cpu", in_channels=1):
     device = torch.device(device)
     model = GravInvNet(in_channels=in_channels).to(device)
-    if Path(f"models/{model_name}.pt").exists():
-        state = torch.load(f"models/{model_name}.pt", map_location=device)
+    if Path(f"checkpoints/final.pt").exists():
+        state = torch.load(f"checkpoints/final.pt", map_location=device)
         model.load_state_dict(state.get("model", state))
     model.eval()
     return model, device
@@ -541,9 +541,9 @@ def _eval(
         accuracy = 0.001
     tr_ld, va_ld, stats = data_prep(
         ds_name="single_block_v2",
-        split_name="single_block_v2_all_comps"
-        if len(components) > 1
-        else "single_block_v2",
+        split_name=(
+            "single_block_v2_all_comps" if len(components) > 1 else "single_block_v2"
+        ),
         bs=bs if eval == "nn" else 1,
         accuracy=accuracy,
         confidence=confidence,
