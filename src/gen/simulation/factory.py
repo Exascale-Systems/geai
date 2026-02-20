@@ -1,7 +1,7 @@
 import numpy as np
-from src.simulation.survey import gravity_survey
-from src.simulation.generators import init_model, create_mesh_from_bounds
-import src.simulation.simulator as gravity_sim
+from .survey import gravity_survey
+from .generators import init_model, create_mesh_from_bounds
+from . import simulator as gravity_sim
 from simpeg.potential_fields import gravity
 
 

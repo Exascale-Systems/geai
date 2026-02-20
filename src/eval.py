@@ -14,5 +14,5 @@ if __name__ == "__main__":
         accuracy=None,
         confidence=0.95,
         accuracy_loop=False,
-        components=("gx", "gy", "gz"),  # Only 3 components work with Choclo
+        components=("gx", "gy", "gz"),
     )

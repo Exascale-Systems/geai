@@ -16,7 +16,7 @@ def main():
         "max_epochs": 20,
         "min_loss": 1e-6,
         "eval_interval": 1,
-        "components": ("gx", "gy", "gz"),  # Only these 3 work with Choclo engine
+        "components": ("gx", "gy", "gz"),
     }
 
     num_components = len(config["components"])

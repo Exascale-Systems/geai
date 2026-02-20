@@ -5,7 +5,7 @@ from pathlib import Path
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
-from src.simulation.factory import create_simulation_from_sample
+from src.gen.simulation.factory import create_simulation_from_sample
 from src.vis import (
     plot_gravity_measurements,
     plot_density_contrast_3D,

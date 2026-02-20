@@ -4,13 +4,13 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 
 import numpy as np
-from src.simulation.generators import (
+from src.gen.simulation.generators import (
     create_topo,
     create_mesh,
     init_model,
     add_random_blocks,
 )
-from src.simulation.survey import gravity_survey
+from src.gen.simulation.survey import gravity_survey
 from simpeg.potential_fields import gravity
 from src.gen.hdf5_writer import MasterWriter
 from tqdm import tqdm
@@ -35,7 +35,7 @@ def generate_batch(
     receiver_locations, survey = gravity_survey(
         topo_xyz=topo_xyz,
         n_per_axis=n_xy,
-        components=("gx", "gy", "gz"),  # Only these 3 work with Choclo engine
+        components=("gx", "gy", "gz"),
     )
     sim = gravity.simulation.Simulation3DIntegral(
         survey=survey,

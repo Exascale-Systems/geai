@@ -1,5 +1,5 @@
 from . import generators
-from src.simulation.simulator import GravitySimulator
+from .simulator import GravitySimulator
 
 
 class GravitySimBuilder:
