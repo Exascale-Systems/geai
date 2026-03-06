@@ -6,3 +6,8 @@ checkpoints/*
 models/*
 logs/*
 results/*
+/data
+/logs
+/models
+/splits
+/checkpoints
