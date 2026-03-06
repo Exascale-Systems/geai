@@ -3,4 +3,4 @@ outs:
   size: 375389917
   nfiles: 10
   hash: md5
-  path: logs
+  path: ../logs
