@@ -91,8 +91,9 @@ class Decoder3D(nn.Module):
 
 # --- Main Network ---
 class GravInvNet(nn.Module):
-    def __init__(self, in_channels=1):
+    def __init__(self, in_channels=1, model_name="default_model"):
         super().__init__()
+        self.model_name = model_name
         self.enc = Encoder2D(in_channels=in_channels)
         self.dim = DimTransform(self.enc.out_channels)
         self.dec = Decoder3D(self.enc.out_channels)

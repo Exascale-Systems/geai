@@ -60,6 +60,7 @@ def train_model(net, tr_ld: DataLoader, va_ld: DataLoader, stats: dict, config: 
     max_epochs = config.get("max_epochs", 200)
     min_loss = config.get("min_loss", 1e-6)
     eval_interval = config.get("eval_interval", 10)
+    model_name = config.get("model_name", "default_model")
 
     dev = torch.device(device)
     print(dev)
@@ -103,11 +104,11 @@ def train_model(net, tr_ld: DataLoader, va_ld: DataLoader, stats: dict, config: 
 
         if va < best:
             best = va
-            torch.save({"model": net.state_dict()}, "checkpoints/best.pt")
+            torch.save({"model": net.state_dict()}, f"checkpoints/{model_name}_best.pt")
         if va < min_loss:
             print(f"Reached target loss {va:.6f} at epoch {e}")
             break
 
     writer.flush()
     writer.close()
-    torch.save({"model": net.state_dict()}, "checkpoints/final.pt")
+    torch.save({"model": net.state_dict()}, f"checkpoints/{model_name}_final.pt")

@@ -8,20 +8,21 @@ from src.training.engine import train_model
 from src.modeling.networks import GravInvNet
 
 
-def main():
+def main(model_name="default_model"):
     config = {
         "device": "cuda",
         "lr": 3e-4,
         "wd": 0.0,
-        "max_epochs": 20,
+        "max_epochs": 2,
         "min_loss": 1e-6,
         "eval_interval": 1,
         "components": ("gx", "gy", "gz"),
+        "model_name": model_name,
     }
 
     num_components = len(config["components"])
     batch_size = 32
-    split_name = "single_block_v2"  # Use standard split with 3 components
+    split_name = "single_block_v2"
 
     accuracy = 5e-1
     confidence = 0.95
@@ -37,10 +38,13 @@ def main():
         components=config["components"],
     )
 
-    net = GravInvNet(in_channels=num_components)
+    net = GravInvNet(in_channels=num_components, model_name=model_name)
 
     train_model(net, tr_ld, va_ld, stats, config)
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+
+    model_name = sys.argv[1] if len(sys.argv) > 1 else "default_model"
+    main(model_name=model_name)
