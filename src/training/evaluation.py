@@ -130,7 +130,7 @@ def eval_nn(
             n_rx = rx.shape[0]
             for i, comp in enumerate(components):
                 true_grav = sample_data["gravity"][i].cpu().numpy()
-                pred_grav_comp = preq_x[i * n_rx : (i + 1) * n_rx]
+                pred_grav_comp = preq_x[i :: len(components)]
 
                 print(
                     f"\n>>> Showing True Gravity Data ({comp}) (close window to continue)..."
