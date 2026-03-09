@@ -13,7 +13,7 @@ def main(model_name="default_model"):
         "device": "cuda",
         "lr": 3e-4,
         "wd": 0.0,
-        "max_epochs": 2,
+        "max_epochs": 100,
         "min_loss": 1e-6,
         "eval_interval": 1,
         "components": ("gx", "gy", "gz"),

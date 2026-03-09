@@ -161,7 +161,14 @@ def train_model(net, tr_ld: DataLoader, va_ld: DataLoader, stats: dict, config: 
             "epoch": e,
             "best_loss": best,
         }
-        torch.save(checkpoint_state, f"checkpoints/{model_name}_epoch_{e:03d}.pt")
+        current_ckpt = f"checkpoints/{model_name}_epoch_{e:03d}.pt"
+        torch.save(checkpoint_state, current_ckpt)
+
+        # Delete previous epoch checkpoint to save disk space
+        if e > 0:
+            prev_ckpt = Path(f"checkpoints/{model_name}_epoch_{e - 1:03d}.pt")
+            if prev_ckpt.exists():
+                prev_ckpt.unlink()
 
         if va < best:
             best = va
