@@ -44,7 +44,5 @@ def main(model_name="default_model"):
 
 
 if __name__ == "__main__":
-    import sys
-
     model_name = sys.argv[1] if len(sys.argv) > 1 else "default_model"
     main(model_name=model_name)
