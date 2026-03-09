@@ -23,14 +23,23 @@ from simpeg import (
     data_misfit,
 )
 from torch.utils.data import Dataset, DataLoader, Subset
-from typing import cast, Any
+from typing import cast, Any, Union
 
 
-def load_model(model_name, device="cpu", in_channels=1):
+def load_model(model_name=None, device="cpu", in_channels=1, checkpoint_path=None):
     device = torch.device(device)
     model = GravInvNet(in_channels=in_channels).to(device)
-    if Path(f"checkpoints/final.pt").exists():
-        state = torch.load(f"checkpoints/final.pt", map_location=device)
+
+    # Determine which checkpoint to load
+    if checkpoint_path:
+        ckpt = checkpoint_path
+    elif model_name:
+        ckpt = f"checkpoints/{model_name}_final.pt"
+    else:
+        ckpt = "checkpoints/default_model_final.pt"
+
+    if Path(ckpt).exists():
+        state = torch.load(ckpt, map_location=device)
         model.load_state_dict(state.get("model", state))
     model.eval()
     return model, device
@@ -536,9 +545,20 @@ def _eval(
     confidence: float = 0.95,
     accuracy_loop: bool = False,
     components: tuple = ("gz",),
+    checkpoint_path: Union[str, Path] = "checkpoints/default_model_final.pt",
 ):
     if accuracy is None:
         accuracy = 0.001
+
+    # Resolve checkpoint path and validate
+    ckpt_path = Path(checkpoint_path)
+    if not ckpt_path.exists():
+        print(f"Checkpoint not found: {checkpoint_path}")
+        return None
+
+    # Extract model name from checkpoint path (e.g., "my_model_best" from "checkpoints/my_model_best.pt")
+    model_name_display = ckpt_path.stem
+
     tr_ld, va_ld, stats = data_prep(
         ds_name="single_block_v2",
         split_name=(
@@ -553,7 +573,7 @@ def _eval(
     )
     dl = {"tr": tr_ld, "va": va_ld}.get(split)
     print(
-        f"Eval: {eval}, Split: {split}, Index: {f'{max_samples if max_samples is not None else "All"}' if idx is None else idx}, Accuracy: {accuracy}, Confidence: {confidence}, Components: {components}"
+        f"Eval: {eval}, Split: {split}, Index: {f'{max_samples if max_samples is not None else "All"}' if idx is None else idx}, Accuracy: {accuracy}, Confidence: {confidence}, Components: {components}, Model: {model_name_display}"
     )
     if dl is None:
         print("Invalid split name")
@@ -561,7 +581,7 @@ def _eval(
 
     def run_nn():
         model, device = load_model(
-            model_name="single_block_500", device="cuda", in_channels=len(components)
+            device="cuda", in_channels=len(components), checkpoint_path=str(ckpt_path)
         )
         return eval_nn(
             net=model, dl=dl, stats=stats, device=device, threshold=0.1, idx=idx
