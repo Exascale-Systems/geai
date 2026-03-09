@@ -8,12 +8,12 @@ from src.training.engine import train_model
 from src.modeling.networks import GravInvNet
 
 
-def main(model_name="default_model"):
+def main(model_name="default_model", accuracy=0.5, confidence=0.95):
     config = {
         "device": "cuda",
         "lr": 3e-4,
         "wd": 0.0,
-        "max_epochs": 100,
+        "max_epochs": 50,
         "min_loss": 1e-6,
         "eval_interval": 1,
         "components": ("gx", "gy", "gz"),
@@ -23,9 +23,6 @@ def main(model_name="default_model"):
     num_components = len(config["components"])
     batch_size = 32
     split_name = "single_block_v2"
-
-    accuracy = 5e-1
-    confidence = 0.95
 
     tr_ld, va_ld, stats = data_prep(
         ds_name="single_block_v2",
@@ -44,5 +41,18 @@ def main(model_name="default_model"):
 
 
 if __name__ == "__main__":
-    model_name = sys.argv[1] if len(sys.argv) > 1 else "default_model"
-    main(model_name=model_name)
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Train gravity inversion model")
+    parser.add_argument(
+        "model_name", nargs="?", default="default_model", help="Model name"
+    )
+    parser.add_argument(
+        "--accuracy", type=float, default=0.5, help="Measurement accuracy (noise level)"
+    )
+    parser.add_argument(
+        "--confidence", type=float, default=0.95, help="Measurement confidence"
+    )
+
+    args = parser.parse_args()
+    main(model_name=args.model_name, accuracy=args.accuracy, confidence=args.confidence)
