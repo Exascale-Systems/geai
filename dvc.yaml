@@ -29,7 +29,7 @@ stages:
   eval:
     foreach: ${train.noise_levels}
     do:
-      cmd: python3 src/eval.py ${item.name} --headless -o metrics/eval_${item.accuracy}.json
+      cmd: python3 src/eval.py ${item.name}
       deps:
         - checkpoints/${item.name}_final.pt
         - src/eval.py
@@ -37,6 +37,9 @@ stages:
       params:
         - train.components
         - train.confidence
+        - train.noise_levels
+        - eval.headless
+        - eval.output_dir
       metrics:
         - metrics/eval_${item.accuracy}.json:
             cache: false

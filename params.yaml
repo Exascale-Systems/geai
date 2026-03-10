@@ -3,6 +3,10 @@ data:
   split_name: single_block_v2
   batch_size: 32
 
+eval:
+  headless: true
+  output_dir: metrics
+
 train:
   device: cuda
   lr: 3e-4

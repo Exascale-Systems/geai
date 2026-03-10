@@ -244,7 +244,7 @@ stages:
       md5: 84e35a86725b144212c0e7a3ec2778c5
       size: 110
   train@0:
-    cmd: python3 src/train.py noise_exp_0.5 --accuracy 0.5 --confidence 0.95
+    cmd: python3 src/train.py noise_exp_0.5
     deps:
     - path: data/single_block_v2.h5
       hash: md5
@@ -256,8 +256,8 @@ stages:
       size: 6636
     - path: src/train.py
       hash: md5
-      md5: c53cc038665dca39dfec892f02417711
-      size: 2224
+      md5: 811a5fce5306ef8a8af998788d1186c3
+      size: 1997
     - path: src/training/engine.py
       hash: md5
       md5: 2d914049ce7f20d9e407aad9bba862c4
@@ -268,12 +268,59 @@ stages:
         train.device: cuda
         train.lr: 0.0003
         train.max_epochs: 1
+        train.noise_levels:
+        - accuracy: 0.5
+          name: noise_exp_0.5
+        - accuracy: 5
+          name: noise_exp_5
+        - accuracy: 50
+          name: noise_exp_50
+        - accuracy: 500
+          name: noise_exp_500
     outs:
     - path: checkpoints/noise_exp_0.5_best.pt
       hash: md5
-      md5: 7a56cbe4db73d0b5a3231a5f1df2d969
+      md5: b56a276ba18b3cc8205ba37ff0d25f52
       size: 243173757
     - path: checkpoints/noise_exp_0.5_final.pt
       hash: md5
-      md5: ea0f405269adc3a09d6da1b053e60c42
+      md5: 13637fe6d4bd2dabf930b6d6f47eb444
       size: 243173830
+  eval@0:
+    cmd: python3 src/eval.py noise_exp_0.5
+    deps:
+    - path: checkpoints/noise_exp_0.5_final.pt
+      hash: md5
+      md5: 13637fe6d4bd2dabf930b6d6f47eb444
+      size: 243173830
+    - path: src/eval.py
+      hash: md5
+      md5: d9d578dbdfa81ccffb4315f9cbf6910d
+      size: 1528
+    - path: src/training/evaluation.py
+      hash: md5
+      md5: acb6cd20ce03a16aef722ecbfeba17b1
+      size: 23174
+    params:
+      params.yaml:
+        eval.headless: true
+        eval.output_dir: metrics
+        train.components:
+        - gx
+        - gy
+        - gz
+        train.confidence: 0.95
+        train.noise_levels:
+        - accuracy: 0.5
+          name: noise_exp_0.5
+        - accuracy: 5
+          name: noise_exp_5
+        - accuracy: 50
+          name: noise_exp_50
+        - accuracy: 500
+          name: noise_exp_500
+    outs:
+    - path: metrics/eval_0.5.json
+      hash: md5
+      md5: 93ec8285f21907c1da87a6afce0c944c
+      size: 111

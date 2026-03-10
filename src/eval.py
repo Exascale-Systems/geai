@@ -11,22 +11,31 @@ from src.training.evaluation import _eval
 if __name__ == "__main__":
     import argparse
 
-    # Load components from params instead of hardcoding
-    params = dvc.api.params_show()
-    components = tuple(params["train"]["components"])
-    confidence = params["train"]["confidence"]
-
     parser = argparse.ArgumentParser(description="Evaluate a model")
-    parser.add_argument("model", nargs="?", default="default_model", help="Model name or checkpoint path")
-    parser.add_argument("--headless", action="store_true", help="Run without displaying plots")
-    parser.add_argument("--output", "-o", type=str, default=None, help="Output JSON file for metrics")
+    parser.add_argument("model", nargs="?", default="default_model", help="Model name")
     args = parser.parse_args()
 
-    # If arg doesn't have .pt extension, assume it's a model name and resolve to checkpoint
-    if not args.model.endswith(".pt"):
-        checkpoint_path = f"checkpoints/{args.model}_final.pt"
-    else:
-        checkpoint_path = args.model
+    model_name = args.model
+
+    # Load params from params.yaml
+    params = dvc.api.params_show()
+    train_params = params["train"]
+    eval_params = params["eval"]
+
+    components = tuple(train_params["components"])
+    confidence = train_params["confidence"]
+
+    # Find accuracy for this model from noise_levels
+    noise_level = next(
+        (nl for nl in train_params["noise_levels"] if nl["name"] == model_name),
+        None
+    )
+    accuracy = noise_level["accuracy"] if noise_level else 0.5
+
+    headless = eval_params["headless"]
+    output_path = f"{eval_params['output_dir']}/eval_{accuracy}.json"
+
+    checkpoint_path = f"checkpoints/{model_name}_final.pt"
 
     metrics = _eval(
         eval="nn",
@@ -38,10 +47,10 @@ if __name__ == "__main__":
         accuracy_loop=False,
         components=components,
         checkpoint_path=checkpoint_path,
-        headless=args.headless,
+        headless=headless,
     )
 
-    if args.output and metrics:
-        with open(args.output, "w") as f:
+    if metrics:
+        with open(output_path, "w") as f:
             json.dump(metrics, f, indent=2)
-        print(f"Metrics saved to {args.output}")
+        print(f"Metrics saved to {output_path}")
