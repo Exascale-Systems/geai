@@ -4,10 +4,17 @@ import json
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 
+import dvc.api
+
 from src.training.evaluation import _eval
 
 if __name__ == "__main__":
     import argparse
+
+    # Load components from params instead of hardcoding
+    params = dvc.api.params_show()
+    components = tuple(params["train"]["components"])
+    confidence = params["train"]["confidence"]
 
     parser = argparse.ArgumentParser(description="Evaluate a model")
     parser.add_argument("model", nargs="?", default="default_model", help="Model name or checkpoint path")
@@ -27,9 +34,9 @@ if __name__ == "__main__":
         idx=0,
         max_samples=None,
         accuracy=None,
-        confidence=0.95,
+        confidence=confidence,
         accuracy_loop=False,
-        components=("gx", "gy", "gz"),
+        components=components,
         checkpoint_path=checkpoint_path,
         headless=args.headless,
     )

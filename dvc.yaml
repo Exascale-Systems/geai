@@ -5,118 +5,38 @@ stages:
       - data/single_block_v2.h5:
           cache: false
 
-  train_0_5:
-    cmd: python3 src/train.py noise_exp_0.5 --accuracy 0.5 --confidence 0.95
-    deps:
-      - data/single_block_v2.h5
-      - src/train.py
-      - src/training/engine.py
-      - src/data/dataset.py
-    params:
-      - train.max_epochs
-      - train.device
-      - train.lr
-    outs:
-      - checkpoints/noise_exp_0.5_final.pt:
-          cache: false
-      - checkpoints/noise_exp_0.5_best.pt:
-          cache: false
+  train:
+    foreach: ${train.noise_levels}
+    do:
+      cmd: python3 src/train.py ${item.name}
+      deps:
+        - data/single_block_v2.h5
+        - src/train.py
+        - src/training/engine.py
+        - src/data/dataset.py
+      params:
+        - train.max_epochs
+        - train.device
+        - train.lr
+        - train.confidence
+        - train.noise_levels
+      outs:
+        - checkpoints/${item.name}_final.pt:
+            cache: false
+        - checkpoints/${item.name}_best.pt:
+            cache: false
 
-  train_5:
-    cmd: python3 src/train.py noise_exp_5 --accuracy 5 --confidence 0.95
-    deps:
-      - data/single_block_v2.h5
-      - src/train.py
-      - src/training/engine.py
-      - src/data/dataset.py
-    params:
-      - train.max_epochs
-      - train.device
-      - train.lr
-    outs:
-      - checkpoints/noise_exp_5_final.pt:
-          cache: false
-      - checkpoints/noise_exp_5_best.pt:
-          cache: false
-
-  train_50:
-    cmd: python3 src/train.py noise_exp_50 --accuracy 50 --confidence 0.95
-    deps:
-      - data/single_block_v2.h5
-      - src/train.py
-      - src/training/engine.py
-      - src/data/dataset.py
-    params:
-      - train.max_epochs
-      - train.device
-      - train.lr
-    outs:
-      - checkpoints/noise_exp_50_final.pt:
-          cache: false
-      - checkpoints/noise_exp_50_best.pt:
-          cache: false
-
-  train_500:
-    cmd: python3 src/train.py noise_exp_500 --accuracy 500 --confidence 0.95
-    deps:
-      - data/single_block_v2.h5
-      - src/train.py
-      - src/training/engine.py
-      - src/data/dataset.py
-    params:
-      - train.max_epochs
-      - train.device
-      - train.lr
-    outs:
-      - checkpoints/noise_exp_500_final.pt:
-          cache: false
-      - checkpoints/noise_exp_500_best.pt:
-          cache: false
-
-  eval_0_5:
-    cmd: python3 src/eval.py noise_exp_0.5 --headless -o metrics/eval_0.5.json
-    deps:
-      - checkpoints/noise_exp_0.5_final.pt
-      - src/eval.py
-      - src/training/evaluation.py
-    params:
-      - train.components
-    metrics:
-      - metrics/eval_0.5.json:
-          cache: false
-
-  eval_5:
-    cmd: python3 src/eval.py noise_exp_5 --headless -o metrics/eval_5.json
-    deps:
-      - checkpoints/noise_exp_5_final.pt
-      - src/eval.py
-      - src/training/evaluation.py
-    params:
-      - train.components
-    metrics:
-      - metrics/eval_5.json:
-          cache: false
-
-  eval_50:
-    cmd: python3 src/eval.py noise_exp_50 --headless -o metrics/eval_50.json
-    deps:
-      - checkpoints/noise_exp_50_final.pt
-      - src/eval.py
-      - src/training/evaluation.py
-    params:
-      - train.components
-    metrics:
-      - metrics/eval_50.json:
-          cache: false
-
-  eval_500:
-    cmd: python3 src/eval.py noise_exp_500 --headless -o metrics/eval_500.json
-    deps:
-      - checkpoints/noise_exp_500_final.pt
-      - src/eval.py
-      - src/training/evaluation.py
-    params:
-      - train.components
-    metrics:
-      - metrics/eval_500.json:
-          cache: false
+  eval:
+    foreach: ${train.noise_levels}
+    do:
+      cmd: python3 src/eval.py ${item.name} --headless -o metrics/eval_${item.accuracy}.json
+      deps:
+        - checkpoints/${item.name}_final.pt
+        - src/eval.py
+        - src/training/evaluation.py
+      params:
+        - train.components
+        - train.confidence
+      metrics:
+        - metrics/eval_${item.accuracy}.json:
+            cache: false

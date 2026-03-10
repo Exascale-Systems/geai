@@ -3,29 +3,46 @@ import os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 
+import dvc.api
+
 from src.data.dataset import data_prep
 from src.training.engine import train_model
 from src.modeling.networks import GravInvNet
 
 
-def main(model_name="default_model", accuracy=0.5, confidence=0.95):
+def main(model_name="default_model"):
+    # Load params from params.yaml
+    params = dvc.api.params_show()
+
+    data_params = params["data"]
+    train_params = params["train"]
+
+    # Use params with CLI overrides for per-stage values
     config = {
-        "device": "cuda",
-        "lr": 3e-4,
-        "wd": 0.0,
-        "max_epochs": 50,
-        "min_loss": 1e-6,
-        "eval_interval": 1,
-        "components": ("gx", "gy", "gz"),
+        "device": train_params["device"],
+        "lr": train_params["lr"],
+        "wd": train_params["wd"],
+        "max_epochs": train_params["max_epochs"],
+        "min_loss": train_params["min_loss"],
+        "eval_interval": train_params["eval_interval"],
+        "components": tuple(train_params["components"]),
         "model_name": model_name,
     }
 
+    # Find accuracy for this model from noise_levels
+    noise_level = next(
+        (nl for nl in train_params["noise_levels"] if nl["name"] == model_name),
+        None
+    )
+    accuracy = noise_level["accuracy"] if noise_level else 0.5
+    confidence = train_params["confidence"]
+
     num_components = len(config["components"])
-    batch_size = 32
-    split_name = "single_block_v2"
+    batch_size = data_params["batch_size"]
+    split_name = data_params["split_name"]
 
     tr_ld, va_ld, stats = data_prep(
-        ds_name="single_block_v2",
+        ds_name=data_params["ds_name"],
         split_name=split_name,
         bs=batch_size,
         load_splits=True,
@@ -47,12 +64,6 @@ if __name__ == "__main__":
     parser.add_argument(
         "model_name", nargs="?", default="default_model", help="Model name"
     )
-    parser.add_argument(
-        "--accuracy", type=float, default=0.5, help="Measurement accuracy (noise level)"
-    )
-    parser.add_argument(
-        "--confidence", type=float, default=0.95, help="Measurement confidence"
-    )
 
     args = parser.parse_args()
-    main(model_name=args.model_name, accuracy=args.accuracy, confidence=args.confidence)
+    main(model_name=args.model_name)

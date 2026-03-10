@@ -243,3 +243,37 @@ stages:
       hash: md5
       md5: 84e35a86725b144212c0e7a3ec2778c5
       size: 110
+  train@0:
+    cmd: python3 src/train.py noise_exp_0.5 --accuracy 0.5 --confidence 0.95
+    deps:
+    - path: data/single_block_v2.h5
+      hash: md5
+      md5: f79298c84de0a189504f44906071bcd0
+      size: 515621504
+    - path: src/data/dataset.py
+      hash: md5
+      md5: 92ce4f55a5a7c3aa74348dc491310e6a
+      size: 6636
+    - path: src/train.py
+      hash: md5
+      md5: c53cc038665dca39dfec892f02417711
+      size: 2224
+    - path: src/training/engine.py
+      hash: md5
+      md5: 2d914049ce7f20d9e407aad9bba862c4
+      size: 6389
+    params:
+      params.yaml:
+        train.confidence: 0.95
+        train.device: cuda
+        train.lr: 0.0003
+        train.max_epochs: 1
+    outs:
+    - path: checkpoints/noise_exp_0.5_best.pt
+      hash: md5
+      md5: 7a56cbe4db73d0b5a3231a5f1df2d969
+      size: 243173757
+    - path: checkpoints/noise_exp_0.5_final.pt
+      hash: md5
+      md5: ea0f405269adc3a09d6da1b053e60c42
+      size: 243173830
