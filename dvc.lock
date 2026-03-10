@@ -140,7 +140,7 @@ stages:
       md5: eecbdf47223999089f75348c89ea1ccd
       size: 243173830
   eval_0_5:
-    cmd: python3 src/eval.py noise_exp_0.5
+    cmd: python3 src/eval.py noise_exp_0.5 --headless -o metrics/eval_0.5.json
     deps:
     - path: checkpoints/noise_exp_0.5_final.pt
       hash: md5
@@ -148,20 +148,25 @@ stages:
       size: 243173830
     - path: src/eval.py
       hash: md5
-      md5: a4a87e4f55c6e57dfbb0ea28182dc7b0
-      size: 714
+      md5: 6561f2f1331d152e4aa7a1ecfa8f188f
+      size: 1320
     - path: src/training/evaluation.py
       hash: md5
-      md5: 428f60b27f2ef07d897078cee4166410
-      size: 23092
+      md5: acb6cd20ce03a16aef722ecbfeba17b1
+      size: 23174
     params:
       params.yaml:
         train.components:
         - gx
         - gy
         - gz
+    outs:
+    - path: metrics/eval_0.5.json
+      hash: md5
+      md5: 6707217cba15e62c78eb3e9f65a71423
+      size: 110
   eval_5:
-    cmd: python3 src/eval.py noise_exp_5
+    cmd: python3 src/eval.py noise_exp_5 --headless -o metrics/eval_5.json
     deps:
     - path: checkpoints/noise_exp_5_final.pt
       hash: md5
@@ -169,20 +174,25 @@ stages:
       size: 243173684
     - path: src/eval.py
       hash: md5
-      md5: a4a87e4f55c6e57dfbb0ea28182dc7b0
-      size: 714
+      md5: 6561f2f1331d152e4aa7a1ecfa8f188f
+      size: 1320
     - path: src/training/evaluation.py
       hash: md5
-      md5: 428f60b27f2ef07d897078cee4166410
-      size: 23092
+      md5: acb6cd20ce03a16aef722ecbfeba17b1
+      size: 23174
     params:
       params.yaml:
         train.components:
         - gx
         - gy
         - gz
+    outs:
+    - path: metrics/eval_5.json
+      hash: md5
+      md5: a3d5deafd095e497bda3618f5e6c85c3
+      size: 110
   eval_50:
-    cmd: python3 src/eval.py noise_exp_50
+    cmd: python3 src/eval.py noise_exp_50 --headless -o metrics/eval_50.json
     deps:
     - path: checkpoints/noise_exp_50_final.pt
       hash: md5
@@ -190,15 +200,46 @@ stages:
       size: 243173757
     - path: src/eval.py
       hash: md5
-      md5: a4a87e4f55c6e57dfbb0ea28182dc7b0
-      size: 714
+      md5: 6561f2f1331d152e4aa7a1ecfa8f188f
+      size: 1320
     - path: src/training/evaluation.py
       hash: md5
-      md5: 428f60b27f2ef07d897078cee4166410
-      size: 23092
+      md5: acb6cd20ce03a16aef722ecbfeba17b1
+      size: 23174
     params:
       params.yaml:
         train.components:
         - gx
         - gy
         - gz
+    outs:
+    - path: metrics/eval_50.json
+      hash: md5
+      md5: 3c16cd52ad8c35df4e71b00f2b793c58
+      size: 112
+  eval_500:
+    cmd: python3 src/eval.py noise_exp_500 --headless -o metrics/eval_500.json
+    deps:
+    - path: checkpoints/noise_exp_500_final.pt
+      hash: md5
+      md5: eecbdf47223999089f75348c89ea1ccd
+      size: 243173830
+    - path: src/eval.py
+      hash: md5
+      md5: 6561f2f1331d152e4aa7a1ecfa8f188f
+      size: 1320
+    - path: src/training/evaluation.py
+      hash: md5
+      md5: acb6cd20ce03a16aef722ecbfeba17b1
+      size: 23174
+    params:
+      params.yaml:
+        train.components:
+        - gx
+        - gy
+        - gz
+    outs:
+    - path: metrics/eval_500.json
+      hash: md5
+      md5: 84e35a86725b144212c0e7a3ec2778c5
+      size: 110

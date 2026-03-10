@@ -74,37 +74,49 @@ stages:
           cache: false
 
   eval_0_5:
-    cmd: python3 src/eval.py noise_exp_0.5
+    cmd: python3 src/eval.py noise_exp_0.5 --headless -o metrics/eval_0.5.json
     deps:
       - checkpoints/noise_exp_0.5_final.pt
       - src/eval.py
       - src/training/evaluation.py
     params:
       - train.components
+    metrics:
+      - metrics/eval_0.5.json:
+          cache: false
 
   eval_5:
-    cmd: python3 src/eval.py noise_exp_5
+    cmd: python3 src/eval.py noise_exp_5 --headless -o metrics/eval_5.json
     deps:
       - checkpoints/noise_exp_5_final.pt
       - src/eval.py
       - src/training/evaluation.py
     params:
       - train.components
+    metrics:
+      - metrics/eval_5.json:
+          cache: false
 
   eval_50:
-    cmd: python3 src/eval.py noise_exp_50
+    cmd: python3 src/eval.py noise_exp_50 --headless -o metrics/eval_50.json
     deps:
       - checkpoints/noise_exp_50_final.pt
       - src/eval.py
       - src/training/evaluation.py
     params:
       - train.components
+    metrics:
+      - metrics/eval_50.json:
+          cache: false
 
   eval_500:
-    cmd: python3 src/eval.py noise_exp_500
+    cmd: python3 src/eval.py noise_exp_500 --headless -o metrics/eval_500.json
     deps:
       - checkpoints/noise_exp_500_final.pt
       - src/eval.py
       - src/training/evaluation.py
     params:
       - train.components
+    metrics:
+      - metrics/eval_500.json:
+          cache: false
