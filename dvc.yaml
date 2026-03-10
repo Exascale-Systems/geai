@@ -1,0 +1,110 @@
+stages:
+  gen_data:
+    cmd: python3 src/gen/batch.py
+    outs:
+      - data/single_block_v2.h5:
+          cache: false
+
+  train_0_5:
+    cmd: python3 src/train.py noise_exp_0.5 --accuracy 0.5 --confidence 0.95
+    deps:
+      - data/single_block_v2.h5
+      - src/train.py
+      - src/training/engine.py
+      - src/data/dataset.py
+    params:
+      - train.max_epochs
+      - train.device
+      - train.lr
+    outs:
+      - checkpoints/noise_exp_0.5_final.pt:
+          cache: false
+      - checkpoints/noise_exp_0.5_best.pt:
+          cache: false
+
+  train_5:
+    cmd: python3 src/train.py noise_exp_5 --accuracy 5 --confidence 0.95
+    deps:
+      - data/single_block_v2.h5
+      - src/train.py
+      - src/training/engine.py
+      - src/data/dataset.py
+    params:
+      - train.max_epochs
+      - train.device
+      - train.lr
+    outs:
+      - checkpoints/noise_exp_5_final.pt:
+          cache: false
+      - checkpoints/noise_exp_5_best.pt:
+          cache: false
+
+  train_50:
+    cmd: python3 src/train.py noise_exp_50 --accuracy 50 --confidence 0.95
+    deps:
+      - data/single_block_v2.h5
+      - src/train.py
+      - src/training/engine.py
+      - src/data/dataset.py
+    params:
+      - train.max_epochs
+      - train.device
+      - train.lr
+    outs:
+      - checkpoints/noise_exp_50_final.pt:
+          cache: false
+      - checkpoints/noise_exp_50_best.pt:
+          cache: false
+
+  train_500:
+    cmd: python3 src/train.py noise_exp_500 --accuracy 500 --confidence 0.95
+    deps:
+      - data/single_block_v2.h5
+      - src/train.py
+      - src/training/engine.py
+      - src/data/dataset.py
+    params:
+      - train.max_epochs
+      - train.device
+      - train.lr
+    outs:
+      - checkpoints/noise_exp_500_final.pt:
+          cache: false
+      - checkpoints/noise_exp_500_best.pt:
+          cache: false
+
+  eval_0_5:
+    cmd: python3 src/eval.py noise_exp_0.5
+    deps:
+      - checkpoints/noise_exp_0.5_final.pt
+      - src/eval.py
+      - src/training/evaluation.py
+    params:
+      - train.components
+
+  eval_5:
+    cmd: python3 src/eval.py noise_exp_5
+    deps:
+      - checkpoints/noise_exp_5_final.pt
+      - src/eval.py
+      - src/training/evaluation.py
+    params:
+      - train.components
+
+  eval_50:
+    cmd: python3 src/eval.py noise_exp_50
+    deps:
+      - checkpoints/noise_exp_50_final.pt
+      - src/eval.py
+      - src/training/evaluation.py
+    params:
+      - train.components
+
+  eval_500:
+    cmd: python3 src/eval.py noise_exp_500
+    deps:
+      - checkpoints/noise_exp_500_final.pt
+      - src/eval.py
+      - src/training/evaluation.py
+    params:
+      - train.components

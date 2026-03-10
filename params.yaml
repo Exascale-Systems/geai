@@ -1,0 +1,26 @@
+data:
+  ds_name: single_block_v2
+  split_name: single_block_v2
+  batch_size: 32
+
+train:
+  device: cuda
+  lr: 3e-4
+  wd: 0.0
+  max_epochs: 50
+  min_loss: 1e-6
+  eval_interval: 1
+  components:
+    - gx
+    - gy
+    - gz
+  confidence: 0.95
+  noise_levels:
+    - accuracy: 0.5
+      name: noise_exp_0.5
+    - accuracy: 5
+      name: noise_exp_5
+    - accuracy: 50
+      name: noise_exp_50
+    - accuracy: 500
+      name: noise_exp_500

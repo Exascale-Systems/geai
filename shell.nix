@@ -21,6 +21,7 @@ let
       tensorboard
       pyvista
       pip
+      dvc
     ]
   );
 in
@@ -57,6 +58,9 @@ pkgs.mkShell {
     fi
 
     source .venv/bin/activate
+
+    # Export PYTHONPATH so subprocesses (like DVC) can find packages from both nixpkgs and venv
+    export PYTHONPATH=".venv/lib/python3.12/site-packages:${pythonWithTorch}/${pythonWithTorch.sitePackages}:$PYTHONPATH"
 
     # Install packages not in nixpkgs
     if ! python -c "import discretize" 2>/dev/null; then

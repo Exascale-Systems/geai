@@ -1,0 +1,204 @@
+schema: '2.0'
+stages:
+  gen_data:
+    cmd: python3 src/gen/batch.py
+    outs:
+    - path: data/single_block_v2.h5
+      hash: md5
+      md5: f79298c84de0a189504f44906071bcd0
+      size: 515621504
+  train_0_5:
+    cmd: python3 src/train.py noise_exp_0.5 --accuracy 0.5 --confidence 0.95
+    deps:
+    - path: data/single_block_v2.h5
+      hash: md5
+      md5: f79298c84de0a189504f44906071bcd0
+      size: 515621504
+    - path: src/data/dataset.py
+      hash: md5
+      md5: 92ce4f55a5a7c3aa74348dc491310e6a
+      size: 6636
+    - path: src/train.py
+      hash: md5
+      md5: bb3c590a03bd0c554b02b6b2ffa3dbea
+      size: 1645
+    - path: src/training/engine.py
+      hash: md5
+      md5: 2d914049ce7f20d9e407aad9bba862c4
+      size: 6389
+    params:
+      params.yaml:
+        train.device: cuda
+        train.lr: 0.0003
+        train.max_epochs: 50
+    outs:
+    - path: checkpoints/noise_exp_0.5_best.pt
+      hash: md5
+      md5: 47715141d81c588b359ef7920771d92d
+      size: 243173757
+    - path: checkpoints/noise_exp_0.5_final.pt
+      hash: md5
+      md5: 4833409254c6dc65da6e8c5efff57dcf
+      size: 243173830
+  train_5:
+    cmd: python3 src/train.py noise_exp_5 --accuracy 5 --confidence 0.95
+    deps:
+    - path: data/single_block_v2.h5
+      hash: md5
+      md5: f79298c84de0a189504f44906071bcd0
+      size: 515621504
+    - path: src/data/dataset.py
+      hash: md5
+      md5: 92ce4f55a5a7c3aa74348dc491310e6a
+      size: 6636
+    - path: src/train.py
+      hash: md5
+      md5: bb3c590a03bd0c554b02b6b2ffa3dbea
+      size: 1645
+    - path: src/training/engine.py
+      hash: md5
+      md5: 2d914049ce7f20d9e407aad9bba862c4
+      size: 6389
+    params:
+      params.yaml:
+        train.device: cuda
+        train.lr: 0.0003
+        train.max_epochs: 50
+    outs:
+    - path: checkpoints/noise_exp_5_best.pt
+      hash: md5
+      md5: bffb450ae65991943466ebad9263190b
+      size: 243173611
+    - path: checkpoints/noise_exp_5_final.pt
+      hash: md5
+      md5: 3c5d9b5664113fba77c1aa3e5fc76899
+      size: 243173684
+  train_50:
+    cmd: python3 src/train.py noise_exp_50 --accuracy 50 --confidence 0.95
+    deps:
+    - path: data/single_block_v2.h5
+      hash: md5
+      md5: f79298c84de0a189504f44906071bcd0
+      size: 515621504
+    - path: src/data/dataset.py
+      hash: md5
+      md5: 92ce4f55a5a7c3aa74348dc491310e6a
+      size: 6636
+    - path: src/train.py
+      hash: md5
+      md5: bb3c590a03bd0c554b02b6b2ffa3dbea
+      size: 1645
+    - path: src/training/engine.py
+      hash: md5
+      md5: 2d914049ce7f20d9e407aad9bba862c4
+      size: 6389
+    params:
+      params.yaml:
+        train.device: cuda
+        train.lr: 0.0003
+        train.max_epochs: 50
+    outs:
+    - path: checkpoints/noise_exp_50_best.pt
+      hash: md5
+      md5: 4be55a0cd1aac0e6326cfc314690435d
+      size: 243173684
+    - path: checkpoints/noise_exp_50_final.pt
+      hash: md5
+      md5: 3c3c80ce84f2f9a049c230e87197b303
+      size: 243173757
+  train_500:
+    cmd: python3 src/train.py noise_exp_500 --accuracy 500 --confidence 0.95
+    deps:
+    - path: data/single_block_v2.h5
+      hash: md5
+      md5: f79298c84de0a189504f44906071bcd0
+      size: 515621504
+    - path: src/data/dataset.py
+      hash: md5
+      md5: 92ce4f55a5a7c3aa74348dc491310e6a
+      size: 6636
+    - path: src/train.py
+      hash: md5
+      md5: bb3c590a03bd0c554b02b6b2ffa3dbea
+      size: 1645
+    - path: src/training/engine.py
+      hash: md5
+      md5: 2d914049ce7f20d9e407aad9bba862c4
+      size: 6389
+    params:
+      params.yaml:
+        train.device: cuda
+        train.lr: 0.0003
+        train.max_epochs: 50
+    outs:
+    - path: checkpoints/noise_exp_500_best.pt
+      hash: md5
+      md5: d9b65d23b6207f28375fb7d874e49c57
+      size: 243173757
+    - path: checkpoints/noise_exp_500_final.pt
+      hash: md5
+      md5: eecbdf47223999089f75348c89ea1ccd
+      size: 243173830
+  eval_0_5:
+    cmd: python3 src/eval.py noise_exp_0.5
+    deps:
+    - path: checkpoints/noise_exp_0.5_final.pt
+      hash: md5
+      md5: 4833409254c6dc65da6e8c5efff57dcf
+      size: 243173830
+    - path: src/eval.py
+      hash: md5
+      md5: a4a87e4f55c6e57dfbb0ea28182dc7b0
+      size: 714
+    - path: src/training/evaluation.py
+      hash: md5
+      md5: 428f60b27f2ef07d897078cee4166410
+      size: 23092
+    params:
+      params.yaml:
+        train.components:
+        - gx
+        - gy
+        - gz
+  eval_5:
+    cmd: python3 src/eval.py noise_exp_5
+    deps:
+    - path: checkpoints/noise_exp_5_final.pt
+      hash: md5
+      md5: 3c5d9b5664113fba77c1aa3e5fc76899
+      size: 243173684
+    - path: src/eval.py
+      hash: md5
+      md5: a4a87e4f55c6e57dfbb0ea28182dc7b0
+      size: 714
+    - path: src/training/evaluation.py
+      hash: md5
+      md5: 428f60b27f2ef07d897078cee4166410
+      size: 23092
+    params:
+      params.yaml:
+        train.components:
+        - gx
+        - gy
+        - gz
+  eval_50:
+    cmd: python3 src/eval.py noise_exp_50
+    deps:
+    - path: checkpoints/noise_exp_50_final.pt
+      hash: md5
+      md5: 3c3c80ce84f2f9a049c230e87197b303
+      size: 243173757
+    - path: src/eval.py
+      hash: md5
+      md5: a4a87e4f55c6e57dfbb0ea28182dc7b0
+      size: 714
+    - path: src/training/evaluation.py
+      hash: md5
+      md5: 428f60b27f2ef07d897078cee4166410
+      size: 23092
+    params:
+      params.yaml:
+        train.components:
+        - gx
+        - gy
+        - gz
