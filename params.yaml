@@ -5,7 +5,7 @@ data:
 
 eval:
   # Considering reverting this to a cli argument
-  headless: false
+  headless: true
   output_dir: metrics
   threshold: 0.003 
 
