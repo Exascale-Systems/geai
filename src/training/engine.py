@@ -108,7 +108,7 @@ def train_model(net, tr_ld: DataLoader, va_ld: DataLoader, stats: dict, config: 
     opt = torch.optim.Adam(net.parameters(), lr=lr, weight_decay=wd)
     crit = nn.MSELoss()
     scaler = GradScaler()
-    writer = SummaryWriter("logs")
+    writer = SummaryWriter(f"logs/{model_name}")
 
     # Check for incomplete run and resume if found
     start_epoch = 0
