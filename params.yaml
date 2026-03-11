@@ -1,7 +1,7 @@
 data:
   ds_name: single_block_v2
   split_name: single_block_v2
-  batch_size: 32
+  batch_size: 8
 
 eval:
   # Considering reverting this to a cli argument

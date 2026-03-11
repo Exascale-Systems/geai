@@ -46,7 +46,7 @@ if __name__ == "__main__":
         metrics = _eval(
             eval="nn",
             split="va",
-            idx=0,
+            idx=None,
             max_samples=None,
             accuracy=test_accuracy,
             confidence=confidence,
