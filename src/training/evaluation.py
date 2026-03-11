@@ -543,6 +543,7 @@ def _eval(
     components: tuple = ("gz",),
     checkpoint_path: Union[str, Path] = "checkpoints/default_model_final.pt",
     headless: bool = False,
+    threshold: float = 0.1,
 ):
     if accuracy is None:
         accuracy = 0.001
@@ -581,7 +582,7 @@ def _eval(
             device="cuda", in_channels=len(components), checkpoint_path=str(ckpt_path)
         )
         return eval_nn(
-            net=model, dl=dl, stats=stats, device=device, threshold=0.1, idx=idx, headless=headless
+            net=model, dl=dl, stats=stats, device=device, threshold=threshold, idx=idx, headless=headless
         )
 
     def run_hybrid():
@@ -591,7 +592,7 @@ def _eval(
             dl=dl,
             stats=stats,
             device=device,
-            threshold=0.1,
+            threshold=threshold,
             idx=idx,
             max_samples=max_samples,
             accuracy=accuracy,
@@ -605,7 +606,7 @@ def _eval(
             dl=dl,
             stats=stats,
             idx=idx,
-            threshold=0.012,
+            threshold=threshold,
             max_samples=max_samples,
             accuracy=accuracy,
             confidence=confidence,
@@ -636,6 +637,7 @@ def _eval(
                     accuracy_loop=False,
                     components=components,
                     headless=headless,
+                    threshold=threshold,
                 )
                 if metrics:
                     writer.writerow(

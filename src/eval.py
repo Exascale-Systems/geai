@@ -34,6 +34,7 @@ if __name__ == "__main__":
 
     headless = eval_params["headless"]
     output_path = f"{eval_params['output_dir']}/eval_{accuracy}.json"
+    threshold = eval_params.get("threshold", 0.1)
 
     checkpoint_path = f"checkpoints/{model_name}_final.pt"
 
@@ -48,6 +49,7 @@ if __name__ == "__main__":
         components=components,
         checkpoint_path=checkpoint_path,
         headless=headless,
+        threshold=threshold,
     )
 
     if metrics:

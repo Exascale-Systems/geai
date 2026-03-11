@@ -4,14 +4,16 @@ data:
   batch_size: 32
 
 eval:
-  headless: true
+  # Considering reverting this to a cli argument
+  headless: false
   output_dir: metrics
+  threshold: 0.003 
 
 train:
   device: cuda
   lr: 3e-4
   wd: 0.0
-  max_epochs: 1
+  max_epochs: 50
   min_loss: 1e-6
   eval_interval: 1
   components:
