@@ -27,8 +27,7 @@ if __name__ == "__main__":
 
     # Find accuracy for this model from noise_levels
     model_noise_level = next(
-        (nl for nl in train_params["noise_levels"] if nl["name"] == model_name),
-        None
+        (nl for nl in train_params["noise_levels"] if nl["name"] == model_name), None
     )
     model_accuracy = model_noise_level["accuracy"] if model_noise_level else 0.5
 
@@ -44,6 +43,7 @@ if __name__ == "__main__":
         test_accuracy = noise_level["accuracy"]
 
         metrics = _eval(
+            # TODO: Make these params
             eval="nn",
             split="va",
             idx=None,
