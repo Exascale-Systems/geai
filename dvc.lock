@@ -305,7 +305,7 @@ stages:
       params.yaml:
         eval.headless: true
         eval.output_dir: metrics
-        eval.threshold: 0.003
+        eval.threshold: 0.1
         train.components:
         - gx
         - gy
@@ -323,7 +323,7 @@ stages:
     outs:
     - path: metrics/eval_0.5.json
       hash: md5
-      md5: 9ff85d7dd41b057a64ca2ff00b263f06
+      md5: 7e1b1e32a99a15fc6b65e78648310713
       size: 670
   train@1:
     cmd: python3 src/train.py noise_exp_5
@@ -473,7 +473,7 @@ stages:
       params.yaml:
         eval.headless: true
         eval.output_dir: metrics
-        eval.threshold: 0.003
+        eval.threshold: 0.1
         train.components:
         - gx
         - gy
@@ -491,8 +491,8 @@ stages:
     outs:
     - path: metrics/eval_5.json
       hash: md5
-      md5: f9cad2cec22ee88a6d400084c5ea3f71
-      size: 670
+      md5: 7facf8adc00ada84a6469fde315b4f4a
+      size: 668
   eval@2:
     cmd: python3 src/eval.py noise_exp_50
     deps:
@@ -512,7 +512,7 @@ stages:
       params.yaml:
         eval.headless: true
         eval.output_dir: metrics
-        eval.threshold: 0.003
+        eval.threshold: 0.1
         train.components:
         - gx
         - gy
@@ -530,8 +530,8 @@ stages:
     outs:
     - path: metrics/eval_50.json
       hash: md5
-      md5: d618442655f283f80c9b5a5355691655
-      size: 672
+      md5: f8955366d322452b855bac207c6258b2
+      size: 667
   eval@3:
     cmd: python3 src/eval.py noise_exp_500
     deps:
@@ -551,7 +551,7 @@ stages:
       params.yaml:
         eval.headless: true
         eval.output_dir: metrics
-        eval.threshold: 0.003
+        eval.threshold: 0.1
         train.components:
         - gx
         - gy
@@ -569,5 +569,5 @@ stages:
     outs:
     - path: metrics/eval_500.json
       hash: md5
-      md5: 4aed3318b19d50ea723f9fd56f1b858a
-      size: 678
+      md5: 1a14f5dd71a37439563e8ea1e9ccd22d
+      size: 676
