@@ -13,9 +13,11 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Evaluate a model")
     parser.add_argument("model", nargs="?", default="default_model", help="Model name")
+    parser.add_argument("--headless", action="store_true", help="Run without displaying plots")
     args = parser.parse_args()
 
     model_name = args.model
+    headless = args.headless
 
     # Load params from params.yaml
     params = dvc.api.params_show()
@@ -31,7 +33,6 @@ if __name__ == "__main__":
     )
     model_accuracy = model_noise_level["accuracy"] if model_noise_level else 0.5
 
-    headless = eval_params["headless"]
     output_path = f"{eval_params['output_dir']}/eval_{model_accuracy}.json"
     threshold = eval_params.get("threshold", 0.1)
 

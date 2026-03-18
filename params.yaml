@@ -4,8 +4,6 @@ data:
   batch_size: 8
 
 eval:
-  # Considering reverting this to a cli argument
-  headless: true
   output_dir: metrics
   threshold: 0.1
 
