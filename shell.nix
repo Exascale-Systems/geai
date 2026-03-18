@@ -68,6 +68,12 @@ pkgs.mkShell {
       pip install discretize simpeg choclo
     fi
 
+    # Install project in editable mode
+    if ! python -c "import src" 2>/dev/null; then
+      echo "Installing project in editable mode..."
+      pip install -e .
+    fi
+
     echo ""
     echo "Environment ready! Testing CUDA..."
     python -c "import torch; print(f'PyTorch: {torch.__version__}'); print(f'CUDA available: {torch.cuda.is_available()}')"
