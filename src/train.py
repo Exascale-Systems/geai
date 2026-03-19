@@ -5,7 +5,7 @@ from src.training.engine import train_model
 from src.modeling.networks import GravInvNet
 
 
-def main(model_name="default_model"):
+def main(model_name="default_model", loss_override=None):
     # Load params from params.yaml
     params = dvc.api.params_show()
 
@@ -22,6 +22,7 @@ def main(model_name="default_model"):
         "eval_interval": train_params["eval_interval"],
         "components": tuple(train_params["components"]),
         "model_name": model_name,
+        "loss_function": loss_override or train_params.get("loss_function", "mse"),
     }
 
     # Find accuracy for this model from noise_levels
@@ -59,6 +60,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "model_name", nargs="?", default="default_model", help="Model name"
     )
+    parser.add_argument(
+        "--loss", type=str, default=None, help="Loss function (overrides params.yaml)"
+    )
 
     args = parser.parse_args()
-    main(model_name=args.model_name)
+    main(model_name=args.model_name, loss_override=args.loss)

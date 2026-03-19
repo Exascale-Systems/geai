@@ -15,16 +15,17 @@ train:
   min_loss: 1e-6
   eval_interval: 1
   components:
-  - gx
-  - gy
+  # - gx
+  # - gy
   - gz
   confidence: 0.95
-  noise_levels:
-  - accuracy: 0.5
-    name: noise_exp_0.5
-  - accuracy: 5
+
+  noise:
+    accuracy: 5
     name: noise_exp_5
-  - accuracy: 50
-    name: noise_exp_50
-  - accuracy: 500
-    name: noise_exp_500
+
+  loss_functions:
+    - mse
+    - mae
+    - huber
+    - smooth_l1

@@ -93,6 +93,20 @@ def run_epoch(
     return tot / max(1, n)
 
 
+def get_loss_function(name: str) -> nn.Module:
+    """Create loss function by name."""
+    losses = {
+        "mse": nn.MSELoss,
+        "mae": nn.L1Loss,
+        "l1": nn.L1Loss,
+        "huber": nn.HuberLoss,
+        "smooth_l1": nn.SmoothL1Loss,
+    }
+    if name.lower() not in losses:
+        raise ValueError(f"Unknown loss function: {name}. Available: {list(losses.keys())}")
+    return losses[name.lower()]()
+
+
 def train_model(net, tr_ld: DataLoader, va_ld: DataLoader, stats: dict, config: dict):
     device = config.get("device", "cuda:0")
     lr = config.get("lr", 3e-4)
@@ -106,7 +120,7 @@ def train_model(net, tr_ld: DataLoader, va_ld: DataLoader, stats: dict, config: 
     print(dev)
     net = net.to(dev)
     opt = torch.optim.Adam(net.parameters(), lr=lr, weight_decay=wd)
-    crit = nn.MSELoss()
+    crit = get_loss_function(config.get("loss_function", "mse"))
     scaler = GradScaler()
     writer = SummaryWriter(f"logs/{model_name}")
 

@@ -6,9 +6,9 @@ stages:
           cache: false
 
   train:
-    foreach: ${train.noise_levels}
+    foreach: ${train.loss_functions}
     do:
-      cmd: python3 src/train.py ${item.name}
+      cmd: python3 src/train.py ${item}
       deps:
         - data/single_block_v2.h5
         - src/train.py
@@ -19,27 +19,29 @@ stages:
         - train.device
         - train.lr
         - train.confidence
-        - train.noise_levels
+        - train.noise
+        - train.loss_functions
       outs:
-        - checkpoints/${item.name}_final.pt:
+        - checkpoints/${item}_final.pt:
             cache: false
-        - checkpoints/${item.name}_best.pt:
+        - checkpoints/${item}_best.pt:
             cache: false
 
   eval:
-    foreach: ${train.noise_levels}
+    foreach: ${train.loss_functions}
     do:
-      cmd: python3 src/eval.py ${item.name} --headless
+      cmd: python3 src/eval.py ${item} --headless
       deps:
-        - checkpoints/${item.name}_final.pt
+        - checkpoints/${item}_final.pt
         - src/eval.py
         - src/training/evaluation.py
       params:
         - train.components
         - train.confidence
-        - train.noise_levels
+        - train.noise
+        - train.loss_functions
         - eval.output_dir
         - eval.threshold
       metrics:
-        - metrics/eval_${item.accuracy}.json:
+        - metrics/eval_${item}.json:
             cache: false
