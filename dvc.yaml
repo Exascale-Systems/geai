@@ -5,43 +5,150 @@ stages:
       - data/single_block_v2.h5:
           cache: false
 
-  train:
-    foreach: ${train.loss_functions}
-    do:
-      cmd: python3 src/train.py ${item}
-      deps:
-        - data/single_block_v2.h5
-        - src/train.py
-        - src/training/engine.py
-        - src/data/dataset.py
-      params:
-        - train.max_epochs
-        - train.device
-        - train.lr
-        - train.confidence
-        - train.noise
-        - train.loss_functions
-      outs:
-        - checkpoints/${item}_final.pt:
-            cache: false
-        - checkpoints/${item}_best.pt:
-            cache: false
+  train_mse:
+    cmd: python3 src/train.py mse
+    deps:
+      - data/single_block_v2.h5
+      - src/train.py
+      - src/training/engine.py
+      - src/data/dataset.py
+    params:
+      - train.max_epochs
+      - train.device
+      - train.lr
+      - train.confidence
+      - train.noise
+      - train.experiments.mse
+    outs:
+      - checkpoints/mse_final.pt:
+          cache: false
+      - checkpoints/mse_best.pt:
+          cache: false
 
-  eval:
-    foreach: ${train.loss_functions}
-    do:
-      cmd: python3 src/eval.py ${item} --headless
-      deps:
-        - checkpoints/${item}_final.pt
-        - src/eval.py
-        - src/training/evaluation.py
-      params:
-        - train.components
-        - train.confidence
-        - train.noise
-        - train.loss_functions
-        - eval.output_dir
-        - eval.threshold
-      metrics:
-        - metrics/eval_${item}.json:
-            cache: false
+  train_mae:
+    cmd: python3 src/train.py mae
+    deps:
+      - data/single_block_v2.h5
+      - src/train.py
+      - src/training/engine.py
+      - src/data/dataset.py
+    params:
+      - train.max_epochs
+      - train.device
+      - train.lr
+      - train.confidence
+      - train.noise
+      - train.experiments.mae
+    outs:
+      - checkpoints/mae_final.pt:
+          cache: false
+      - checkpoints/mae_best.pt:
+          cache: false
+
+  train_huber:
+    cmd: python3 src/train.py huber
+    deps:
+      - data/single_block_v2.h5
+      - src/train.py
+      - src/training/engine.py
+      - src/data/dataset.py
+    params:
+      - train.max_epochs
+      - train.device
+      - train.lr
+      - train.confidence
+      - train.noise
+      - train.experiments.huber
+    outs:
+      - checkpoints/huber_final.pt:
+          cache: false
+      - checkpoints/huber_best.pt:
+          cache: false
+
+  train_smooth_l1:
+    cmd: python3 src/train.py smooth_l1
+    deps:
+      - data/single_block_v2.h5
+      - src/train.py
+      - src/training/engine.py
+      - src/data/dataset.py
+    params:
+      - train.max_epochs
+      - train.device
+      - train.lr
+      - train.confidence
+      - train.noise
+      - train.experiments.smooth_l1
+    outs:
+      - checkpoints/smooth_l1_final.pt:
+          cache: false
+      - checkpoints/smooth_l1_best.pt:
+          cache: false
+
+  eval_mse:
+    cmd: python3 src/eval.py mse --headless
+    deps:
+      - checkpoints/mse_final.pt
+      - src/eval.py
+      - src/training/evaluation.py
+    params:
+      - train.components
+      - train.confidence
+      - train.noise
+      - train.experiments.mse
+      - eval.output_dir
+      - eval.threshold
+    metrics:
+      - metrics/eval_mse.json:
+          cache: false
+
+  eval_mae:
+    cmd: python3 src/eval.py mae --headless
+    deps:
+      - checkpoints/mae_final.pt
+      - src/eval.py
+      - src/training/evaluation.py
+    params:
+      - train.components
+      - train.confidence
+      - train.noise
+      - train.experiments.mae
+      - eval.output_dir
+      - eval.threshold
+    metrics:
+      - metrics/eval_mae.json:
+          cache: false
+
+  eval_huber:
+    cmd: python3 src/eval.py huber --headless
+    deps:
+      - checkpoints/huber_final.pt
+      - src/eval.py
+      - src/training/evaluation.py
+    params:
+      - train.components
+      - train.confidence
+      - train.noise
+      - train.experiments.huber
+      - eval.output_dir
+      - eval.threshold
+    metrics:
+      - metrics/eval_huber.json:
+          cache: false
+
+  eval_smooth_l1:
+    cmd: python3 src/eval.py smooth_l1 --headless
+    deps:
+      - checkpoints/smooth_l1_final.pt
+      - src/eval.py
+      - src/training/evaluation.py
+    params:
+      - train.components
+      - train.confidence
+      - train.noise
+      - train.experiments.smooth_l1
+      - eval.output_dir
+      - eval.threshold
+    metrics:
+      - metrics/eval_smooth_l1.json:
+          cache: false

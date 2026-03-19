@@ -15,8 +15,8 @@ train:
   min_loss: 1e-6
   eval_interval: 1
   components:
-  # - gx
-  # - gy
+  - gx
+  - gy
   - gz
   confidence: 0.95
 
@@ -24,8 +24,12 @@ train:
     accuracy: 5
     name: noise_exp_5
 
-  loss_functions:
-    - mse
-    - mae
-    - huber
-    - smooth_l1
+  experiments:
+    mse:
+      loss_function: mse
+    mae:
+      loss_function: mae
+    huber:
+      loss_function: huber
+    smooth_l1:
+      loss_function: smooth_l1
