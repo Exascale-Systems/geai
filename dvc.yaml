@@ -152,3 +152,41 @@ stages:
     metrics:
       - metrics/eval_smooth_l1.json:
           cache: false
+
+  train_dice:
+    cmd: python3 src/train.py dice
+    deps:
+      - data/single_block_v2.h5
+      - src/train.py
+      - src/training/engine.py
+      - src/training/loss_functions.py
+      - src/data/dataset.py
+    params:
+      - train.max_epochs
+      - train.device
+      - train.lr
+      - train.confidence
+      - train.noise
+      - train.experiments.dice
+    outs:
+      - checkpoints/dice_final.pt:
+          cache: false
+      - checkpoints/dice_best.pt:
+          cache: false
+
+  eval_dice:
+    cmd: python3 src/eval.py dice --headless
+    deps:
+      - checkpoints/dice_final.pt
+      - src/eval.py
+      - src/training/evaluation.py
+    params:
+      - train.components
+      - train.confidence
+      - train.noise
+      - train.experiments.dice
+      - eval.output_dir
+      - eval.threshold
+    metrics:
+      - metrics/eval_dice.json:
+          cache: false

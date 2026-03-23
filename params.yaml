@@ -33,3 +33,5 @@ train:
       loss_function: huber
     smooth_l1:
       loss_function: smooth_l1
+    dice:
+      loss_function: dice

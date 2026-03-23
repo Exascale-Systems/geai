@@ -6,6 +6,7 @@ from torch.utils.tensorboard import SummaryWriter
 from torch.amp.grad_scaler import GradScaler
 from pathlib import Path
 from src.training.evaluation import eval_nn
+from src.training.loss_functions import DiceLoss
 
 
 def _find_latest_epoch_checkpoint(model_name):
@@ -101,6 +102,7 @@ def get_loss_function(name: str) -> nn.Module:
         "l1": nn.L1Loss,
         "huber": nn.HuberLoss,
         "smooth_l1": nn.SmoothL1Loss,
+        "dice": DiceLoss,
     }
     if name.lower() not in losses:
         raise ValueError(f"Unknown loss function: {name}. Available: {list(losses.keys())}")
