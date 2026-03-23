@@ -567,3 +567,295 @@ stages:
       hash: md5
       md5: e0c9bb9989abf8a6bf6595ea0de51e49
       size: 674
+  train_mse:
+    cmd: python3 src/train.py mse
+    deps:
+    - path: data/single_block_v2.h5
+      hash: md5
+      md5: f79298c84de0a189504f44906071bcd0
+      size: 515621504
+    - path: src/data/dataset.py
+      hash: md5
+      md5: 92ce4f55a5a7c3aa74348dc491310e6a
+      size: 6636
+    - path: src/train.py
+      hash: md5
+      md5: 3def0dabdf9bb90d4777bf9f10d7c142
+      size: 1531
+    - path: src/training/engine.py
+      hash: md5
+      md5: 7749e320108373fb046f6d923ebeb891
+      size: 6863
+    params:
+      params.yaml:
+        train.confidence: 0.95
+        train.device: cuda
+        train.experiments.mse:
+          loss_function: mse
+        train.lr: 0.0003
+        train.max_epochs: 50
+        train.noise:
+          accuracy: 5
+          name: noise_exp_5
+    outs:
+    - path: checkpoints/mse_best.pt
+      hash: md5
+      md5: a28b27edbfbb0d35aa74ed8049234eb4
+      size: 243172628
+    - path: checkpoints/mse_final.pt
+      hash: md5
+      md5: a40b08ef4729cc0dfcf9931e56752774
+      size: 243172699
+  train_mae:
+    cmd: python3 src/train.py mae
+    deps:
+    - path: data/single_block_v2.h5
+      hash: md5
+      md5: f79298c84de0a189504f44906071bcd0
+      size: 515621504
+    - path: src/data/dataset.py
+      hash: md5
+      md5: 92ce4f55a5a7c3aa74348dc491310e6a
+      size: 6636
+    - path: src/train.py
+      hash: md5
+      md5: 3def0dabdf9bb90d4777bf9f10d7c142
+      size: 1531
+    - path: src/training/engine.py
+      hash: md5
+      md5: 7749e320108373fb046f6d923ebeb891
+      size: 6863
+    params:
+      params.yaml:
+        train.confidence: 0.95
+        train.device: cuda
+        train.experiments.mae:
+          loss_function: mae
+        train.lr: 0.0003
+        train.max_epochs: 50
+        train.noise:
+          accuracy: 5
+          name: noise_exp_5
+    outs:
+    - path: checkpoints/mae_best.pt
+      hash: md5
+      md5: 8d7e17491337133cc668955b725d0c14
+      size: 243172628
+    - path: checkpoints/mae_final.pt
+      hash: md5
+      md5: 1954336ddbfe14c2d13867468e5cbf56
+      size: 243172699
+  train_huber:
+    cmd: python3 src/train.py huber
+    deps:
+    - path: data/single_block_v2.h5
+      hash: md5
+      md5: f79298c84de0a189504f44906071bcd0
+      size: 515621504
+    - path: src/data/dataset.py
+      hash: md5
+      md5: 92ce4f55a5a7c3aa74348dc491310e6a
+      size: 6636
+    - path: src/train.py
+      hash: md5
+      md5: 3def0dabdf9bb90d4777bf9f10d7c142
+      size: 1531
+    - path: src/training/engine.py
+      hash: md5
+      md5: 7749e320108373fb046f6d923ebeb891
+      size: 6863
+    params:
+      params.yaml:
+        train.confidence: 0.95
+        train.device: cuda
+        train.experiments.huber:
+          loss_function: huber
+        train.lr: 0.0003
+        train.max_epochs: 50
+        train.noise:
+          accuracy: 5
+          name: noise_exp_5
+    outs:
+    - path: checkpoints/huber_best.pt
+      hash: md5
+      md5: be35ad8375418ef962bd426a2385f6c0
+      size: 243172770
+    - path: checkpoints/huber_final.pt
+      hash: md5
+      md5: 8d0cde980da395e4e85fb27507ba81ff
+      size: 243172841
+  train_smooth_l1:
+    cmd: python3 src/train.py smooth_l1
+    deps:
+    - path: data/single_block_v2.h5
+      hash: md5
+      md5: f79298c84de0a189504f44906071bcd0
+      size: 515621504
+    - path: src/data/dataset.py
+      hash: md5
+      md5: 92ce4f55a5a7c3aa74348dc491310e6a
+      size: 6636
+    - path: src/train.py
+      hash: md5
+      md5: 3def0dabdf9bb90d4777bf9f10d7c142
+      size: 1531
+    - path: src/training/engine.py
+      hash: md5
+      md5: 7749e320108373fb046f6d923ebeb891
+      size: 6863
+    params:
+      params.yaml:
+        train.confidence: 0.95
+        train.device: cuda
+        train.experiments.smooth_l1:
+          loss_function: smooth_l1
+        train.lr: 0.0003
+        train.max_epochs: 50
+        train.noise:
+          accuracy: 5
+          name: noise_exp_5
+    outs:
+    - path: checkpoints/smooth_l1_best.pt
+      hash: md5
+      md5: 8f155acc81f091041a2248b97a87ef1f
+      size: 243173054
+    - path: checkpoints/smooth_l1_final.pt
+      hash: md5
+      md5: b24afbafec1f7b2e0dd7d5825bd8a7d9
+      size: 243173125
+  eval_mse:
+    cmd: python3 src/eval.py mse --headless
+    deps:
+    - path: checkpoints/mse_final.pt
+      hash: md5
+      md5: a40b08ef4729cc0dfcf9931e56752774
+      size: 243172699
+    - path: src/eval.py
+      hash: md5
+      md5: 1c300054169126705b289760a855dc90
+      size: 1407
+    - path: src/training/evaluation.py
+      hash: md5
+      md5: ebfa8ec908dbb4f260d1f3836d6f1c74
+      size: 23259
+    params:
+      params.yaml:
+        eval.output_dir: metrics
+        eval.threshold: 0.1
+        train.components:
+        - gx
+        - gy
+        - gz
+        train.confidence: 0.95
+        train.experiments.mse:
+          loss_function: mse
+        train.noise:
+          accuracy: 5
+          name: noise_exp_5
+    outs:
+    - path: metrics/eval_mse.json
+      hash: md5
+      md5: 9355158559760954477b861a8e5f5cb4
+      size: 143
+  eval_mae:
+    cmd: python3 src/eval.py mae --headless
+    deps:
+    - path: checkpoints/mae_final.pt
+      hash: md5
+      md5: 1954336ddbfe14c2d13867468e5cbf56
+      size: 243172699
+    - path: src/eval.py
+      hash: md5
+      md5: 1c300054169126705b289760a855dc90
+      size: 1407
+    - path: src/training/evaluation.py
+      hash: md5
+      md5: ebfa8ec908dbb4f260d1f3836d6f1c74
+      size: 23259
+    params:
+      params.yaml:
+        eval.output_dir: metrics
+        eval.threshold: 0.1
+        train.components:
+        - gx
+        - gy
+        - gz
+        train.confidence: 0.95
+        train.experiments.mae:
+          loss_function: mae
+        train.noise:
+          accuracy: 5
+          name: noise_exp_5
+    outs:
+    - path: metrics/eval_mae.json
+      hash: md5
+      md5: ed0dc671663ef7a44a180fd7b80aad22
+      size: 114
+  eval_huber:
+    cmd: python3 src/eval.py huber --headless
+    deps:
+    - path: checkpoints/huber_final.pt
+      hash: md5
+      md5: 8d0cde980da395e4e85fb27507ba81ff
+      size: 243172841
+    - path: src/eval.py
+      hash: md5
+      md5: 1c300054169126705b289760a855dc90
+      size: 1407
+    - path: src/training/evaluation.py
+      hash: md5
+      md5: ebfa8ec908dbb4f260d1f3836d6f1c74
+      size: 23259
+    params:
+      params.yaml:
+        eval.output_dir: metrics
+        eval.threshold: 0.1
+        train.components:
+        - gx
+        - gy
+        - gz
+        train.confidence: 0.95
+        train.experiments.huber:
+          loss_function: huber
+        train.noise:
+          accuracy: 5
+          name: noise_exp_5
+    outs:
+    - path: metrics/eval_huber.json
+      hash: md5
+      md5: f3c90ed1af2e2bcb8445ddabeedabebd
+      size: 144
+  eval_smooth_l1:
+    cmd: python3 src/eval.py smooth_l1 --headless
+    deps:
+    - path: checkpoints/smooth_l1_final.pt
+      hash: md5
+      md5: b24afbafec1f7b2e0dd7d5825bd8a7d9
+      size: 243173125
+    - path: src/eval.py
+      hash: md5
+      md5: 1c300054169126705b289760a855dc90
+      size: 1407
+    - path: src/training/evaluation.py
+      hash: md5
+      md5: ebfa8ec908dbb4f260d1f3836d6f1c74
+      size: 23259
+    params:
+      params.yaml:
+        eval.output_dir: metrics
+        eval.threshold: 0.1
+        train.components:
+        - gx
+        - gy
+        - gz
+        train.confidence: 0.95
+        train.experiments.smooth_l1:
+          loss_function: smooth_l1
+        train.noise:
+          accuracy: 5
+          name: noise_exp_5
+    outs:
+    - path: metrics/eval_smooth_l1.json
+      hash: md5
+      md5: 5179ad633b2cf0fd77dc62941a5ff447
+      size: 143
