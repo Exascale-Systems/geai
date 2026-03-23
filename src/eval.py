@@ -22,42 +22,28 @@ if __name__ == "__main__":
 
     components = tuple(train_params["components"])
     confidence = train_params["confidence"]
+    accuracy = train_params["noise"]["accuracy"]
 
-    # Find accuracy for this model from noise_levels
-    model_noise_level = next(
-        (nl for nl in train_params["noise_levels"] if nl["name"] == model_name), None
-    )
-    model_accuracy = model_noise_level["accuracy"] if model_noise_level else 0.5
-
-    output_path = f"{eval_params['output_dir']}/eval_{model_accuracy}.json"
+    output_path = f"{eval_params['output_dir']}/eval_{model_name}.json"
     threshold = eval_params.get("threshold", 0.1)
 
     checkpoint_path = f"checkpoints/{model_name}_final.pt"
 
-    # Evaluate this model on ALL noise levels
-    all_results = {}
-    for noise_level in train_params["noise_levels"]:
-        test_accuracy = noise_level["accuracy"]
+    metrics = _eval(
+        eval="nn",
+        split="va",
+        idx=None,
+        max_samples=None,
+        accuracy=accuracy,
+        confidence=confidence,
+        accuracy_loop=False,
+        components=components,
+        checkpoint_path=checkpoint_path,
+        headless=headless,
+        threshold=threshold,
+    )
 
-        metrics = _eval(
-            # TODO: Make these params
-            eval="nn",
-            split="va",
-            idx=None,
-            max_samples=None,
-            accuracy=test_accuracy,
-            confidence=confidence,
-            accuracy_loop=False,
-            components=components,
-            checkpoint_path=checkpoint_path,
-            headless=headless,
-            threshold=threshold,
-        )
-
-        if metrics:
-            all_results[str(test_accuracy)] = metrics
-
-    if all_results:
+    if metrics:
         with open(output_path, "w") as f:
-            json.dump(all_results, f, indent=2)
+            json.dump(metrics, f, indent=2)
         print(f"Metrics saved to {output_path}")
