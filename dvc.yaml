@@ -1,20 +1,67 @@
 stages:
-  train:
-    cmd: python src/train.py
+  gen_data:
+    cmd: python scripts/gen.py
     params:
       - params.yaml:
+          - gen.out_path
+          - gen.ds_size
+          - gen.x_dom
+          - gen.y_dom
+          - gen.z_dom
+          - gen.n_xy
+          - gen.n_z
+          - gen.n_blocks
+          - gen.size_frac_min
+          - gen.size_frac_max
+          - gen.density_min
+          - gen.density_max
+    outs:
+      - ${gen.out_path}:
+          cache: true
+
+  train:
+    cmd: python scripts/train.py ${train.model_name}
+    deps:
+      - data/${data.ds_name}.h5
+    params:
+      - params.yaml:
+          - data.ds_name
+          - data.split_name
+          - data.batch_size
+          - train.model_name
           - train.lr
           - train.wd
           - train.max_epochs
           - train.min_loss
           - train.eval_interval
           - train.device
-          - train.batch_size
+          - train.components
+          - train.noise.accuracy
+          - train.confidence
+          - train.experiments
     outs:
+      - checkpoints/${train.model_name}_final.pt:
+          cache: true
       - checkpoints/best.pt:
           cache: true
-      - checkpoints/final.pt:
-          cache: true
     metrics:
-      - metrics.json:
+      - metrics/${train.model_name}_train.json:
+          cache: false
+
+  eval:
+    cmd: python scripts/eval.py ${train.model_name} --headless
+    deps:
+      - checkpoints/${train.model_name}_final.pt
+    params:
+      - params.yaml:
+          - data.ds_name
+          - data.split_name
+          - train.model_name
+          - train.components
+          - train.noise.accuracy
+          - train.confidence
+          - eval.output_dir
+          - eval.threshold
+    metrics:
+      - ${eval.output_dir}/eval_${train.model_name}.json:
           cache: false

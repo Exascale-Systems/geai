@@ -1,14 +1,15 @@
 import numpy as np
-from src.gen.simulation.generators import (
-    create_topo,
-    create_mesh,
-    init_model,
-    add_random_blocks,
-)
-from src.gen.simulation.survey import gravity_survey
 from simpeg.potential_fields import gravity
-from src.gen.hdf5_writer import MasterWriter
 from tqdm import tqdm
+
+from src.gen.core import (
+    add_random_blocks,
+    create_mesh,
+    create_topo,
+    gravity_survey,
+    init_model,
+)
+from src.gen.hdf5_writer import MasterWriter
 
 
 def generate_batch(

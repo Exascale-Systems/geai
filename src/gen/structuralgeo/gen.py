@@ -1,11 +1,11 @@
 import numpy as np
-from scipy.interpolate import LinearNDInterpolator
-from src.data.transforms import add_noise
 from discretize import TensorMesh
 from discretize.utils import active_from_xyz
+from geogen.dataset import GeoData3DStreamingDataset
 from simpeg import maps
 from simpeg.potential_fields import gravity
-from geogen.dataset import GeoData3DStreamingDataset
+
+from src.data.transforms import add_noise
 
 
 def get_sample(dataset, k):
@@ -102,10 +102,10 @@ def main():
     plt.hist(y, bins=100, density=False, alpha=0.7)
     plt.show()
     try:
-        from src.vis import (
-            plot_topography,
+        from src.evaluation import (
             plot_density_contrast_3D,
             plot_gravity_measurements,
+            plot_topography,
         )
 
         plot_topography(topo_xyz)

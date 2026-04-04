@@ -1,7 +1,15 @@
-from src.gen.StructuralGeo_gen import *
-from src.gen.hdf5_writer import MasterWriter
-from tqdm import tqdm
 from geogen.dataset import GeoData3DStreamingDataset
+from simpeg.potential_fields import gravity
+from tqdm import tqdm
+
+from src.gen.hdf5_writer import MasterWriter
+from src.gen.structuralgeo.gen import (
+    create_mesh,
+    create_topo,
+    get_sample,
+    gravity_survey,
+    init_model,
+)
 
 
 def generate_batch(

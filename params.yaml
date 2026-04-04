@@ -1,8 +1,39 @@
+data:
+  ds_name: single_block_v2
+  split_name: single_block_v2
+  batch_size: 32
+
+gen:
+  out_path: data/single_block_v2.h5
+  ds_size: 20000
+  x_dom: 1600.0
+  y_dom: 1600.0
+  z_dom: 800.0
+  n_xy: 32
+  n_z: 16
+  n_blocks: 1
+  size_frac_min: 0.10
+  size_frac_max: 0.30
+  density_min: 0.0
+  density_max: 1.0
+
 train:
+  model_name: default_model
+  device: cpu
   lr: 1e-3
   wd: 0.0
   max_epochs: 20
   min_loss: 1e-6
   eval_interval: 1
-  device: cpu
-  batch_size: 32
+  components:
+    - gz
+  noise:
+    accuracy: 0.05
+  confidence: 0.95
+  experiments:
+    default_model:
+      loss_function: mse
+
+eval:
+  output_dir: metrics
+  threshold: 0.1

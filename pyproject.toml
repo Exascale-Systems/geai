@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "gravimetry"
 version = "0.1.0"
-description = "Add your description here"
+description = "Gravity inversion via deep learning — data generation, UNet training, and evaluation pipeline"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -29,8 +29,19 @@ dependencies = [
     "vtk>=9.5.2",
 ]
 
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+exclude = ["archive/"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = ["E501"]
+
 [tool.setuptools.packages.find]
 where = ["."]
+namespaces = true
 
 [tool.uv.sources]
 GeoGen = { git = "https://github.com/kostubhagarwal/StructuralGeo" }

@@ -1,10 +1,21 @@
+import logging
+
 import torch
 import torch.nn as nn
-from tqdm.auto import tqdm
+from torch.amp.grad_scaler import GradScaler
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
-from torch.amp.grad_scaler import GradScaler
-from src.vis.evaluation import eval_nn
+from tqdm.auto import tqdm
+
+from src.evaluation.nn import eval_nn
+from src.nn.loss_functions import DiceLoss
+
+logger = logging.getLogger(__name__)
+
+LOSS_REGISTRY: dict[str, type[nn.Module]] = {
+    "mse": nn.MSELoss,
+    "dice": DiceLoss,
+}
 
 
 def run_epoch(
@@ -35,10 +46,7 @@ def run_epoch(
             if train:
                 scaler.scale(loss).backward()
                 scaler.unscale_(opt)
-                grad_norm = torch.nn.utils.clip_grad_norm_(
-                    net.parameters(), float("inf")
-                )
-                nn.utils.clip_grad_norm_(net.parameters(), 1.0)
+                grad_norm = torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
                 writer.add_scalar(
                     "Gradients/norm", grad_norm, epoch * len(ld) + batch_idx
                 )
@@ -54,20 +62,30 @@ def run_epoch(
 
 
 def train_model(net, tr_ld: DataLoader, va_ld: DataLoader, stats: dict, config: dict):
-    device = config.get("device", "cuda:0")
+    device = config.get("device", "cuda" if torch.cuda.is_available() else "cpu")
     lr = config.get("lr", 3e-4)
     wd = config.get("wd", 0.0)
     max_epochs = config.get("max_epochs", 200)
     min_loss = config.get("min_loss", 1e-6)
     eval_interval = config.get("eval_interval", 10)
+    loss_fn_name = config.get("loss_function", "mse")
+    log_dir = config.get("log_dir", "logs")
+    checkpoint_dir = config.get("checkpoint_dir", "checkpoints")
+    model_name = config.get("model_name", "model")
 
     dev = torch.device(device)
-    print(dev)
+    logger.info("Device: %s", dev)
     net = net.to(dev)
     opt = torch.optim.Adam(net.parameters(), lr=lr, weight_decay=wd)
-    crit = nn.MSELoss()
+
+    crit_cls = LOSS_REGISTRY.get(loss_fn_name)
+    if crit_cls is None:
+        raise ValueError(f"Unknown loss function '{loss_fn_name}'. Choose from: {list(LOSS_REGISTRY)}")
+    crit = crit_cls()
+    logger.info("Loss function: %s", loss_fn_name)
+
     scaler = GradScaler()
-    writer = SummaryWriter("logs")
+    writer = SummaryWriter(log_dir)
 
     pbar = tqdm(range(0, max_epochs), desc="training", ncols=100)
     best = float("inf")
@@ -103,14 +121,14 @@ def train_model(net, tr_ld: DataLoader, va_ld: DataLoader, stats: dict, config: 
 
         if va < best:
             best = va
-            torch.save({"model": net.state_dict()}, "checkpoints/best.pt")
+            torch.save({"model": net.state_dict()}, f"{checkpoint_dir}/best.pt")
         if va < min_loss:
-            print(f"Reached target loss {va:.6f} at epoch {e}")
+            logger.info("Reached target loss %.6f at epoch %d", va, e)
             break
 
     writer.flush()
     writer.close()
-    torch.save({"model": net.state_dict()}, "checkpoints/final.pt")
+    torch.save({"model": net.state_dict()}, f"{checkpoint_dir}/{model_name}_final.pt")
 
     final_metrics = eval_nn(net, va_ld, stats, dev)
     final_metrics["best_val_loss"] = best

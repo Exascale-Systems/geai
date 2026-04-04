@@ -1,11 +1,12 @@
-import torch
-import numpy as np
 import math
+
 import h5py
+import numpy as np
+import torch
 from scipy.stats import norm as scipy_norm
 
 
-def add_noise(shape, accuracy, confidence=0.95, seed=0):
+def add_noise(shape, accuracy, confidence=0.95, seed=None):
     """
     Simulate measurement uncertainty by adding Gaussian noise to data.
     Eg. gravimeter accuracy is 0.1 mGal with 95% confidence.

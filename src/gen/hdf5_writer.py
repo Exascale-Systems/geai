@@ -1,6 +1,8 @@
+from pathlib import Path
+
 import h5py
 import numpy as np
-from pathlib import Path
+
 
 def save_sample_h5(path, gravity_data, receiver_locations, true_model, ind_active, seed):
     """

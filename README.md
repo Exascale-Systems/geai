@@ -73,14 +73,12 @@ Feature extent & Model scoring: https://github.com/chipnbits/flowtrain_stochasti
 
 ### Infrastructure & Links
 
-- [gravity-sims](https://github.com/Exascale-Systems/gravity-sims) — visualization, data generation, evaluation, forward modeling, UNet
+- [geai](https://github.com/Exascale-Systems/geai) — visualization, data generation, evaluation, forward modeling, UNet
 - [Datasets & models](https://drive.google.com/file/d/1VrqcjQ8eliTs9gD75zIvI0jUpR37lg5K/view?usp=sharing) — Google Drive
 - [StructuralGeo fork](https://github.com/kostubhagarwal/StructuralGeo) — realistic geology data generation
 - [flowtrain_stochastic_interpolation](https://github.com/kostubhagarwal/flowtrain_stochastic_interpolation) — template for posterior flow sampling
 
 ---
-
-## This Repo (gravity-sims)
 
 ## Objective
 
@@ -93,8 +91,6 @@ Bayesian analysis techniques like [SIMPEG](https://docs.simpeg.xyz/latest/conten
 Evaluation of the process requires the following:
 
 Generate synthetic density contrast → Calculate gravity at surface → Add noise to surface gravity measurement (to simulate realistic survey) → Solve for density contrast using SIMPEG (L2 or IRLS inverse solvers).
-
-[bayesian.ipynb](archive/bayesian.ipynb)
 
 Unfortunately this method is unsuitable for non-linear / sparse problems, struggles at long wavelengths, and is computationally expensive.
 
@@ -111,27 +107,157 @@ Generate synthetic subsurface density map → Calculate gravity at surface → A
 
 Trying to replicate *Deep Learning for 3-D Inversion of Gravity Data* by *Zhang et al.*
 
-<img src="documentation/zhang.png" alt="alt text" width="800" />
+<img src="resources/zhang.png" alt="alt text" width="800" />
 
-## Dataset 1 [[single_block.h5](datasets/single_block.h5)]
+## Dataset 1 [[single_block_v2.h5](data/single_block_v2.h5)]
 
 - 20 000 samples
-- 4:1 training, validation [[single_block.npz](splits/single_block.npz)]
+- 4:1 training, validation [[single_block_v2.npz](splits/single_block_v2.npz)]
 - 0-1 g/cm^3
 - 32 x 32 x 16 (50m voxels)
 - Randomly generate 1 block 0-30% of domain size within voxel grid
 - flat topography
 - noise: 0.05e-3 mGal, w/ 95% confidence
-- Results: [[single_block](runs/single_block)]
-    - $tensorboard --logdir=runs --bind_all
 
 ## Dataset 2
 
-The following paper describes a method for generating much more plausible/realistic synthetic geology. More specifically, applying matrix transformations to reflect realisitc geological timelines to an inital deposition of material. The variance in this dataset is a function of Markov sampling of the following [Markov Matrix](StructuralGeo/src/geogen/generation/markov_matrix/default_markov_matrix.csv).
+The following paper describes a method for generating much more plausible/realistic synthetic geology. More specifically, applying matrix transformations to reflect realisitc geological timelines to an inital deposition of material. The variance in this dataset is a function of Markov sampling of the following [Markov Matrix](https://github.com/kostubhagarwal/StructuralGeo/blob/main/src/geogen/generation/markov_matrix/default_markov_matrix.csv).
 
 [Synthetic Geology -- Structural Geology Meets Deep Learning](https://arxiv.org/abs/2506.11164)
 
-The generation of this dataset relies on a [forked version](https://github.com/kostubhagarwal/StructuralGeo) of the repo described in this paper. This fork adds a channel of information (in this case density) to 'Rock Category Mapping' as defined in StructuralGeo via a [lookup table](StructuralGeo/src/geogen/dataset/add_channel.py).
+The generation of this dataset relies on a [forked version](https://github.com/kostubhagarwal/StructuralGeo) of the repo described in this paper. This fork adds a channel of information (in this case density) to 'Rock Category Mapping' as defined in StructuralGeo via a lookup table.
+
+## Repo
+
+```
+scripts/
+  gen.py                entry point: generate dataset
+  train.py              entry point: train the model
+  eval.py               entry point: run evaluation
+
+src/
+  data/
+    dataset.py          HDF5 streaming dataset, component extraction, normalization
+    transforms.py       noise injection, norm/denorm
+
+  gen/
+    core.py             mesh, topography, random blocks, gravity survey (SimPEG)
+    batch.py            batch generation — dataset 1 (random blocks)
+    hdf5_writer.py      writes samples to HDF5
+    structuralgeo/
+      gen.py            StructuralGeo integration (realistic geology)
+      batch.py          batch generation — dataset 2
+
+  models/
+    unet.py             GravInvNet — 2D→3D UNet
+
+  train/
+    engine.py           training loop, checkpointing, TensorBoard logging
+    loss_functions.py   DiceLoss
+
+  evaluation/
+    pipeline.py         orchestrator: selects nn / bayesian / hybrid
+    nn.py               NN evaluation + single-sample visualization
+    hybrid.py           NN prediction as SimPEG initial model
+    simpeg.py           pure Bayesian inversion (SimPEG)
+    metrics.py          TorchMetrics, NumpyMetrics (RMSE, L1, IoU, Dice)
+    plotter.py          gravity and density visualizations
+
+params.yaml             all hyperparameters (data, gen, train, eval)
+dvc.yaml                pipeline stage definitions
+```
+
+## Dependencies
+
+- **[SimPEG](https://simpeg.xyz)** — forward modeling and inversion. Generates ground truth gravity data and serves as a physics-based regularizer in the hybrid eval pipeline.
+- **[StructuralGeo](https://github.com/kostubhagarwal/StructuralGeo)** (forked) — realistic synthetic geology via Markov-sampled structural history. Installed from the fork via `uv`.
+- **[DVC](https://dvc.org)** — tracks datasets, models, splits, checkpoints. Pipeline in `dvc.yaml`, parameters in `params.yaml`.
+- **[TensorBoard](https://tensorboard.dev)** — loss curves, gradient norms, weight histograms.
+
+## Setup
+
+```sh
+uv sync
+```
+
+Datasets and model checkpoints are not included in the repo. Download them from [Google Drive](https://drive.google.com/file/d/1VrqcjQ8eliTs9gD75zIvI0jUpR37lg5K/view?usp=sharing) and place `.h5` files in `data/` and `.pt` files in `checkpoints/`. Alternatively, regenerate from scratch with `dvc repro gen_data`.
+
+---
+
+## DVC
+
+DVC tracks three pipeline stages: `gen_data → train → eval`. All hyperparameters live in `params.yaml`. DVC detects when params or dependencies change and only re-runs what's stale — it won't regenerate a 20K-sample dataset just because you tweaked `lr`.
+
+### Run the full pipeline
+
+```sh
+dvc repro
+```
+
+### Run only one stage
+
+```sh
+dvc repro gen_data   # generate dataset only
+dvc repro train      # train only (skips gen_data if data is unchanged)
+dvc repro eval       # evaluate only (skips train if checkpoint is unchanged)
+```
+
+DVC checks each stage's dependencies first. If `data/single_block_v2.h5` already exists and `gen.*` params haven't changed, `dvc repro train` will skip gen_data entirely and go straight to training.
+
+### Freeze a stage permanently
+
+If you never want DVC to re-run data generation (e.g. dataset is fixed), freeze it:
+
+```sh
+dvc freeze gen_data     # dvc repro will always skip this stage
+dvc unfreeze gen_data   # re-enable it
+```
+
+### Inspect results
+
+```sh
+dvc metrics show        # print all tracked metrics (train + eval JSON)
+dvc params diff         # show what params changed since last run
+dvc dag                 # visualize the pipeline graph
+```
+
+### Change an experiment
+
+Edit `params.yaml` (e.g. change `train.model_name`, `train.lr`, `train.experiments`), then:
+
+```sh
+dvc repro train eval    # re-run only the affected stages
+```
+
+---
+
+## TensorBoard
+
+Training logs loss curves, gradient norms, weight histograms, and eval metrics in real time.
+
+```sh
+tensorboard --logdir=logs --bind_all
+```
+
+Open `http://localhost:6006` in your browser.
+
+### What's logged
+
+| Tab | What you see |
+|---|---|
+| **Scalars / Loss** | `Loss/train` and `Loss/val` per epoch |
+| **Scalars / Metrics** | RMSE, L1, IoU, Dice on the validation set (logged every `eval_interval` epochs) |
+| **Scalars / Hyperparams** | LR and weight decay (useful when using schedulers) |
+| **Scalars / Gradients** | Gradient norm per batch — watch for spikes (exploding) or collapse to zero (vanishing) |
+| **Histograms / Weights** | Weight distribution drift per layer per epoch — useful for detecting dead neurons or saturation |
+
+### Typical healthy run
+
+- `Loss/train` and `Loss/val` both decrease and track each other closely (no large gap = no overfitting)
+- Gradient norm stays in the 0.01–1.0 range
+- Weight histograms shift gradually without collapsing to zero
+
+---
 
 ## To-do
 #### High Priority
