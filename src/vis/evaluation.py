@@ -3,6 +3,8 @@ from scipy.stats import norm
 import torch
 from pathlib import Path
 from tqdm import tqdm
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from src.gen.simulation.factory import create_simulation_from_sample
@@ -10,9 +12,9 @@ from src.vis import (
     plot_gravity_measurements,
     plot_density_contrast_3D,
 )
-from src.training.metrics import TorchMetrics, NumpyMetrics
+from src.vis.metrics import TorchMetrics, NumpyMetrics
 from src.data.dataset import data_prep
-from src.modeling.networks import GravInvNet
+from src.models.unet import GravInvNet
 from simpeg import (
     data,
     inverse_problem,
@@ -23,23 +25,14 @@ from simpeg import (
     data_misfit,
 )
 from torch.utils.data import Dataset, DataLoader, Subset
-from typing import cast, Any, Union
+from typing import cast, Any
 
 
-def load_model(model_name=None, device="cpu", in_channels=1, checkpoint_path=None):
+def load_model(model_name, device="cpu", in_channels=1):
     device = torch.device(device)
     model = GravInvNet(in_channels=in_channels).to(device)
-
-    # Determine which checkpoint to load
-    if checkpoint_path:
-        ckpt = checkpoint_path
-    elif model_name:
-        ckpt = f"checkpoints/{model_name}_final.pt"
-    else:
-        ckpt = "checkpoints/default_model_final.pt"
-
-    if Path(ckpt).exists():
-        state = torch.load(ckpt, map_location=device)
+    if Path(f"models/vector_f.pt").exists():
+        state = torch.load(f"models/vector_f.pt", map_location=device)
         model.load_state_dict(state.get("model", state))
     model.eval()
     return model, device
@@ -52,7 +45,6 @@ def eval_nn(
     device: torch.device,
     idx: int | None = None,
     threshold: float = 0.1,
-    headless: bool = False,
 ):
     """
     Neural network prediction sampling.
@@ -99,9 +91,18 @@ def eval_nn(
             pred_y = net(x)
 
             # Prepare for plotting
-            pred_y_np = (
-                pred_y[0].permute(2, 1, 0).reshape(-1).cpu().numpy().flatten(order="F")
-            )
+            pred_y_np = pred_y[0].permute(2,1,0).reshape(-1).cpu().numpy().flatten(order="F")
+
+            # Plot and show histogram
+            fig, ax = plt.subplots(figsize=(10, 6))
+            ax.hist(pred_y_np, bins=50, alpha=0.5, label="Predicted")
+            ax.set_xlabel("Density Value")
+            ax.set_ylabel("Frequency")
+            ax.set_title("Predicted Density Distribution")
+            ax.legend()
+            print("\n>>> Showing density histogram (close window to continue)...")
+            plt.show(block=True)
+            plt.close()
 
             # Deactivate transform to get raw sample data
             ds_dataset = cast(Any, ds.dataset)
@@ -125,41 +126,39 @@ def eval_nn(
             true_model_np = np.zeros_like(ind, float)
             true_model_np[ind] = sample_data["true_model"].cpu().numpy()
 
+            # Plot each gravity component
+            n_rx = rx.shape[0]
+            for i, comp in enumerate(components):
+                true_grav = sample_data["gravity"][i].cpu().numpy()
+                pred_grav_comp = preq_x[i :: len(components)]
+
+                print(
+                    f"\n>>> Showing True Gravity Data ({comp}) (close window to continue)..."
+                )
+                plot_gravity_measurements(
+                    rx, true_grav, title=f"True Gravity Data ({comp})"
+                )
+
+                print(
+                    f">>> Showing Predicted Gravity Data ({comp}) (close window to continue)..."
+                )
+                plot_gravity_measurements(
+                    rx, pred_grav_comp, title=f"Predicted Gravity Data ({comp})"
+                )
+
+            print(
+                "\n>>> Showing True Density Contrast 3D (close window to continue)..."
+            )
+            plot_density_contrast_3D(mesh, ind, true_model_np)
+
+            print(
+                ">>> Showing Predicted Density Contrast 3D (close window to continue)..."
+            )
+            plot_density_contrast_3D(mesh, ind, pred_y_np)
+
             print(
                 f"Predicted density stats - min: {pred_y_np.min()}, max: {pred_y_np.max()}, mean: {pred_y_np.mean()}"
             )
-
-            if not headless:
-                # Plot each gravity component
-                n_rx = rx.shape[0]
-                for i, comp in enumerate(components):
-                    true_grav = sample_data["gravity"][i].cpu().numpy()
-                    pred_grav_comp = preq_x[i :: len(components)]
-
-                    print(
-                        f"\n>>> Showing True Gravity Data ({comp}) (close window to continue)..."
-                    )
-                    plot_gravity_measurements(
-                        rx, true_grav, title=f"True Gravity Data ({comp})"
-                    )
-
-                    print(
-                        f">>> Showing Predicted Gravity Data ({comp}) (close window to continue)..."
-                    )
-                    plot_gravity_measurements(
-                        rx, pred_grav_comp, title=f"Predicted Gravity Data ({comp})"
-                    )
-
-                print(
-                    "\n>>> Showing True Density Contrast 3D (close window to continue)..."
-                )
-                plot_density_contrast_3D(mesh, ind, true_model_np)
-
-                print(
-                    ">>> Showing Predicted Density Contrast 3D (close window to continue)..."
-                )
-                plot_density_contrast_3D(mesh, ind, pred_y_np)
-
             print("\nEvaluation complete!")
 
     return {
@@ -181,7 +180,6 @@ def eval_hybrid(
     max_samples: int | None = None,
     accuracy: float = 0.001,
     confidence: float = 0.95,
-    headless: bool = False,
 ):
     """
     Hybrid NN-Bayesian inversion: Use NN prediction as initial model (m0) for SimPEG.
@@ -324,27 +322,26 @@ def eval_hybrid(
         pred_y = inv.run(nn_m0)
         metrics.update(true_y.cpu().numpy().flatten(order="F"), pred_y)
 
-        if not headless:
-            preq_x = sim.dpred(pred_y)
+        preq_x = sim.dpred(pred_y)
 
-            rx = sample_data["receiver_locations"].cpu().numpy()
-            true_model_np = np.zeros_like(ind, float)
-            true_model_np[ind] = sample_data["true_model"].cpu().numpy()
+        rx = sample_data["receiver_locations"].cpu().numpy()
+        true_model_np = np.zeros_like(ind, float)
+        true_model_np[ind] = sample_data["true_model"].cpu().numpy()
 
-            n_rx = rx.shape[0]
-            for i, comp in enumerate(components):
-                true_grav = sample_data["gravity"][i].cpu().numpy()
-                pred_grav_comp = preq_x[i * n_rx : (i + 1) * n_rx]
-                plot_gravity_measurements(
-                    rx, true_grav, title=f"True Gravity Data ({comp})"
-                )
-                plot_gravity_measurements(
-                    rx, pred_grav_comp, title=f"Predicted Gravity Data ({comp})"
-                )
+        n_rx = rx.shape[0]
+        for i, comp in enumerate(components):
+            true_grav = sample_data["gravity"][i].cpu().numpy()
+            pred_grav_comp = preq_x[i * n_rx : (i + 1) * n_rx]
+            plot_gravity_measurements(
+                rx, true_grav, title=f"True Gravity Data ({comp})"
+            )
+            plot_gravity_measurements(
+                rx, pred_grav_comp, title=f"Predicted Gravity Data ({comp})"
+            )
 
-            plot_density_contrast_3D(mesh, ind, true_model_np)
-            plot_density_contrast_3D(mesh, ind, pred_y)
-            input("Press Enter to close plots...")
+        plot_density_contrast_3D(mesh, ind, true_model_np)
+        plot_density_contrast_3D(mesh, ind, pred_y)
+        input("Press Enter to close plots...")
 
     results = metrics.compute()
     rmse_val, l1_val, iou_val, dice_val = (
@@ -370,7 +367,6 @@ def eval_bayesian(
     max_samples: int | None = None,
     accuracy: float = 0.001,
     confidence: float = 0.95,
-    headless: bool = False,
 ):
     """
     Bayesian inversion (SIMPEG) sampling.
@@ -493,27 +489,26 @@ def eval_bayesian(
         true_y = sample_data["true_model"].cpu().numpy()
         metrics.update(true_y, pred_y)
 
-        if not headless:
-            preq_x = sim.dpred(pred_y)
+        preq_x = sim.dpred(pred_y)
 
-            rx = sample_data["receiver_locations"].cpu().numpy()
-            true_model_np = np.zeros_like(ind, float)
-            true_model_np[ind] = true_y
+        rx = sample_data["receiver_locations"].cpu().numpy()
+        true_model_np = np.zeros_like(ind, float)
+        true_model_np[ind] = true_y
 
-            n_rx = rx.shape[0]
-            for i, comp in enumerate(components):
-                true_grav = sample_data["gravity"][i].cpu().numpy()
-                pred_grav_comp = preq_x[i * n_rx : (i + 1) * n_rx]
-                plot_gravity_measurements(
-                    rx, true_grav, title=f"True Gravity Data ({comp})"
-                )
-                plot_gravity_measurements(
-                    rx, pred_grav_comp, title=f"Predicted Gravity Data ({comp})"
-                )
+        n_rx = rx.shape[0]
+        for i, comp in enumerate(components):
+            true_grav = sample_data["gravity"][i].cpu().numpy()
+            pred_grav_comp = preq_x[i * n_rx : (i + 1) * n_rx]
+            plot_gravity_measurements(
+                rx, true_grav, title=f"True Gravity Data ({comp})"
+            )
+            plot_gravity_measurements(
+                rx, pred_grav_comp, title=f"Predicted Gravity Data ({comp})"
+            )
 
-            plot_density_contrast_3D(mesh, ind, true_model_np)
-            plot_density_contrast_3D(mesh, ind, pred_y)
-            input("Press Enter to close plots...")
+        plot_density_contrast_3D(mesh, ind, true_model_np)
+        plot_density_contrast_3D(mesh, ind, pred_y)
+        input("Press Enter to close plots...")
 
     results = metrics.compute()
     rmse_val, l1_val, iou_val, dice_val = (
@@ -541,22 +536,9 @@ def _eval(
     confidence: float = 0.95,
     accuracy_loop: bool = False,
     components: tuple = ("gz",),
-    checkpoint_path: Union[str, Path] = "checkpoints/default_model_final.pt",
-    headless: bool = False,
-    threshold: float = 0.1,
 ):
     if accuracy is None:
         accuracy = 0.001
-
-    # Resolve checkpoint path and validate
-    ckpt_path = Path(checkpoint_path)
-    if not ckpt_path.exists():
-        print(f"Checkpoint not found: {checkpoint_path}")
-        return None
-
-    # Extract model name from checkpoint path (e.g., "my_model_best" from "checkpoints/my_model_best.pt")
-    model_name_display = ckpt_path.stem
-
     tr_ld, va_ld, stats = data_prep(
         ds_name="single_block_v2",
         split_name=(
@@ -571,7 +553,7 @@ def _eval(
     )
     dl = {"tr": tr_ld, "va": va_ld}.get(split)
     print(
-        f"Eval: {eval}, Split: {split}, Index: {f'{max_samples if max_samples is not None else "All"}' if idx is None else idx}, Accuracy: {accuracy}, Confidence: {confidence}, Components: {components}, Model: {model_name_display}"
+        f"Eval: {eval}, Split: {split}, Index: {f'{max_samples if max_samples is not None else "All"}' if idx is None else idx}, Accuracy: {accuracy}, Confidence: {confidence}, Components: {components}"
     )
     if dl is None:
         print("Invalid split name")
@@ -579,25 +561,24 @@ def _eval(
 
     def run_nn():
         model, device = load_model(
-            device="cuda", in_channels=len(components), checkpoint_path=str(ckpt_path)
+            model_name="single_block_500", device="cpu", in_channels=len(components)
         )
         return eval_nn(
-            net=model, dl=dl, stats=stats, device=device, threshold=threshold, idx=idx, headless=headless
+            net=model, dl=dl, stats=stats, device=device, threshold=0.1, idx=idx
         )
 
     def run_hybrid():
-        model, device = load_model(model_name="single_block_05", device="cuda")
+        model, device = load_model(model_name="single_block_05", device="cpu", in_channels=len(components))
         return eval_hybrid(
             net=model,
             dl=dl,
             stats=stats,
             device=device,
-            threshold=threshold,
+            threshold=0.1,
             idx=idx,
             max_samples=max_samples,
             accuracy=accuracy,
             confidence=confidence,
-            headless=headless,
         )
 
     eval_funcs = {
@@ -606,11 +587,10 @@ def _eval(
             dl=dl,
             stats=stats,
             idx=idx,
-            threshold=threshold,
+            threshold=0.012,
             max_samples=max_samples,
             accuracy=accuracy,
             confidence=confidence,
-            headless=headless,
         ),
         "hybrid": run_hybrid,
     }
@@ -636,8 +616,6 @@ def _eval(
                     confidence=confidence,
                     accuracy_loop=False,
                     components=components,
-                    headless=headless,
-                    threshold=threshold,
                 )
                 if metrics:
                     writer.writerow(

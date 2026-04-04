@@ -33,7 +33,12 @@ def create_simulation_from_sample(sample_data, shape_cells, h, components=("gz",
         resolution=(nx, ny, nz),
     )
 
-    _, survey = gravity_survey(rx, components=components)
+    # Build the survey directly from stored receiver locations to preserve ordering.
+    # Calling gravity_survey(rx) would reverse the grid because it uses rx[-1] and
+    # rx[0] as bounds, which are swapped relative to the original generation order.
+    rx_obj = gravity.receivers.Point(rx, components=list(components))
+    src = gravity.sources.SourceField(receiver_list=[rx_obj])
+    survey = gravity.survey.Survey(src)
     _, _, model_map, _ = init_model(mesh, rx, 0)
 
     sim = gravity.simulation.Simulation3DIntegral(

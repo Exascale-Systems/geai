@@ -1,37 +1,8 @@
-data:
-  ds_name: single_block_v2
-  split_name: single_block_v2
-  batch_size: 8
-
-eval:
-  output_dir: metrics
-  threshold: 0.1
-
 train:
-  device: cuda
-  lr: 3e-4
+  lr: 1e-3
   wd: 0.0
-  max_epochs: 50
+  max_epochs: 20
   min_loss: 1e-6
   eval_interval: 1
-  components:
-  - gx
-  - gy
-  - gz
-  confidence: 0.95
-
-  noise:
-    accuracy: 5
-    name: noise_exp_5
-
-  experiments:
-    mse:
-      loss_function: mse
-    mae:
-      loss_function: mae
-    huber:
-      loss_function: huber
-    smooth_l1:
-      loss_function: smooth_l1
-    dice:
-      loss_function: dice
+  device: cpu
+  batch_size: 32

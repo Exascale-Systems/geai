@@ -2,7 +2,7 @@ import json
 
 import dvc.api
 
-from src.training.evaluation import _eval
+from src.vis.evaluation import _eval
 
 if __name__ == "__main__":
     import argparse

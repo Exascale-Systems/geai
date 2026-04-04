@@ -4,48 +4,7 @@ from tqdm.auto import tqdm
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from torch.amp.grad_scaler import GradScaler
-from pathlib import Path
-from src.training.evaluation import eval_nn
-from src.training.loss_functions import DiceLoss
-
-
-def _find_latest_epoch_checkpoint(model_name):
-    """Find the latest epoch checkpoint for a model. Returns (epoch, path) or (None, None)."""
-    checkpoints = list(Path("checkpoints").glob(f"{model_name}_epoch_*.pt"))
-    if not checkpoints:
-        return None, None
-
-    epoch_nums = []
-    for ckpt in checkpoints:
-        try:
-            epoch_num = int(ckpt.stem.split("_")[-1])
-            epoch_nums.append((epoch_num, ckpt))
-        except (ValueError, IndexError):
-            pass
-
-    if not epoch_nums:
-        return None, None
-
-    epoch, path = max(epoch_nums, key=lambda x: x[0])
-    return epoch, path
-
-
-def _load_checkpoint_state(checkpoint_path, net, device):
-    """Load checkpoint and return the states needed to resume."""
-    checkpoint = torch.load(checkpoint_path, map_location=device)
-    net.load_state_dict(checkpoint["model"])
-    resume_epoch = checkpoint["epoch"] + 1
-    best_loss = checkpoint["best_loss"]
-    opt_state = checkpoint["optimizer"]
-    scaler_state = checkpoint["scaler"]
-    return resume_epoch, best_loss, opt_state, scaler_state
-
-
-def _cleanup_epoch_checkpoints(model_name):
-    """Remove all per-epoch checkpoints after training completes."""
-    checkpoints = list(Path("checkpoints").glob(f"{model_name}_epoch_*.pt"))
-    for ckpt in checkpoints:
-        ckpt.unlink()
+from src.vis.evaluation import eval_nn
 
 
 def run_epoch(
@@ -94,21 +53,6 @@ def run_epoch(
     return tot / max(1, n)
 
 
-def get_loss_function(name: str) -> nn.Module:
-    """Create loss function by name."""
-    losses = {
-        "mse": nn.MSELoss,
-        "mae": nn.L1Loss,
-        "l1": nn.L1Loss,
-        "huber": nn.HuberLoss,
-        "smooth_l1": nn.SmoothL1Loss,
-        "dice": DiceLoss,
-    }
-    if name.lower() not in losses:
-        raise ValueError(f"Unknown loss function: {name}. Available: {list(losses.keys())}")
-    return losses[name.lower()]()
-
-
 def train_model(net, tr_ld: DataLoader, va_ld: DataLoader, stats: dict, config: dict):
     device = config.get("device", "cuda:0")
     lr = config.get("lr", 3e-4)
@@ -116,29 +60,17 @@ def train_model(net, tr_ld: DataLoader, va_ld: DataLoader, stats: dict, config: 
     max_epochs = config.get("max_epochs", 200)
     min_loss = config.get("min_loss", 1e-6)
     eval_interval = config.get("eval_interval", 10)
-    model_name = config.get("model_name", "default_model")
 
     dev = torch.device(device)
     print(dev)
     net = net.to(dev)
     opt = torch.optim.Adam(net.parameters(), lr=lr, weight_decay=wd)
-    crit = get_loss_function(config.get("loss_function", "mse"))
+    crit = nn.MSELoss()
     scaler = GradScaler()
-    writer = SummaryWriter(f"logs/{model_name}")
+    writer = SummaryWriter("logs")
 
-    # Check for incomplete run and resume if found
-    start_epoch = 0
+    pbar = tqdm(range(0, max_epochs), desc="training", ncols=100)
     best = float("inf")
-    epoch, ckpt_path = _find_latest_epoch_checkpoint(model_name)
-    if epoch is not None:
-        print(f"Found checkpoint at epoch {epoch}. Resuming...")
-        start_epoch, best, opt_state, scaler_state = _load_checkpoint_state(
-            ckpt_path, net, dev
-        )
-        opt.load_state_dict(opt_state)
-        scaler.load_state_dict(scaler_state)
-
-    pbar = tqdm(range(start_epoch, max_epochs), desc="training", ncols=100)
 
     for e in pbar:
         tr = run_epoch(
@@ -169,33 +101,17 @@ def train_model(net, tr_ld: DataLoader, va_ld: DataLoader, stats: dict, config: 
             writer.add_histogram(f"Weights/{name}", param, e)
         writer.flush()
 
-        # Save per-epoch checkpoint
-        checkpoint_state = {
-            "model": net.state_dict(),
-            "optimizer": opt.state_dict(),
-            "scaler": scaler.state_dict(),
-            "epoch": e,
-            "best_loss": best,
-        }
-        current_ckpt = f"checkpoints/{model_name}_epoch_{e:03d}.pt"
-        torch.save(checkpoint_state, current_ckpt)
-
-        # Delete previous epoch checkpoint to save disk space
-        if e > 0:
-            prev_ckpt = Path(f"checkpoints/{model_name}_epoch_{e - 1:03d}.pt")
-            if prev_ckpt.exists():
-                prev_ckpt.unlink()
-
         if va < best:
             best = va
-            torch.save({"model": net.state_dict()}, f"checkpoints/{model_name}_best.pt")
+            torch.save({"model": net.state_dict()}, "checkpoints/best.pt")
         if va < min_loss:
             print(f"Reached target loss {va:.6f} at epoch {e}")
             break
 
     writer.flush()
     writer.close()
-    torch.save({"model": net.state_dict()}, f"checkpoints/{model_name}_final.pt")
+    torch.save({"model": net.state_dict()}, "checkpoints/final.pt")
 
-    # Cleanup per-epoch checkpoints since training is complete
-    _cleanup_epoch_checkpoints(model_name)
+    final_metrics = eval_nn(net, va_ld, stats, dev)
+    final_metrics["best_val_loss"] = best
+    return final_metrics
