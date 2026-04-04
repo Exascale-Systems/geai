@@ -1,11 +1,11 @@
 import numpy as np
 from scipy.interpolate import LinearNDInterpolator
-from src.utils import add_noise
+from src.data.transforms import add_noise
 from discretize import TensorMesh
 from discretize.utils import active_from_xyz
 from simpeg import maps
 from simpeg.potential_fields import gravity
-from StructuralGeo.src.geogen.dataset import GeoData3DStreamingDataset
+from geogen.dataset import GeoData3DStreamingDataset
 
 
 def get_sample(dataset, k):

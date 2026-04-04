@@ -1,7 +1,7 @@
 from src.gen.StructuralGeo_gen import *
 from src.gen.hdf5_writer import MasterWriter
 from tqdm import tqdm
-from StructuralGeo.src.geogen.dataset import GeoData3DStreamingDataset
+from geogen.dataset import GeoData3DStreamingDataset
 
 
 def generate_batch(
