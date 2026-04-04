@@ -1,14 +1,98 @@
+# Generative Exploration AI (GEAI)
+
+## Background
+
+Remote sensing of the subsurface is fundamentally ambiguous — many possible geological models can explain the same measurements.
+
+**Gravity example:**
+- **Forward problem:** Given a 3D density model → compute gravity field. Well-defined, computationally expensive but solvable.
+- **Inverse problem:** Given gravity field → recover 3D density. Ill-posed: non-unique, unstable, underdetermined (2D → 3D).
+
+**Industry approaches today:**
+1. **Model → simulate → compare** — propose a geological model, forward simulate, compare with observed data, repeat.
+2. **Direct inversion** — invert measurements into a model, often heavily regularized.
+
+Both are used in conjunction, but service providers usually only deliver a model that fits the data — not one that's necessarily right or the most likely across the full solution space.
+
+## Vision
+
+Build an agent to drive end-to-end geophysical exploration — analogous to AlphaGo.
+
+```
+belief -> action -> possible observation -> plan -> measurement -> updated belief -> repeat
+```
+
+1. Generate geology
+2. Suggest measurements (where most uncertain)
+3. Take measurements (gravity, drill, mag, etc.)
+4. Update geology
+5. Repeat until satisfied
+
+**Bayesian formulation:**
+```
+P(m|d) = P(m) * P(d|m)
+
+New Belief = Old Belief * New Measurement Likelihood
+
+m: structural geology
+d: observations
+
+P(m):   structural geology prior
+P(d|m): likelihood of measurement given structural geology prior
+P(m|d): structural geology given measurement
+```
+
+**Steps:**
+
+1. Generate many samples of synthetic geology (Flow Matching, GANs)
+
+2. Planning (MCTS or POMDP):
+```
+for candidate action a across all samples:
+    simulate possible d ~ P(d|m, a)
+        - predicted measurement value * each sample's voxel likelihood
+    update belief
+    evaluate downstream value
+```
+
+3. Choose highest expected value measurement (e.g., drill: angle, depth, x/y location)
+
+4. Take a real measurement
+
+5. Update belief via conditional generative geology
+
+### Next Steps
+
+1. Posterior Flow Sampling Implementation of Gravity & Conditional Flow Matching of Gravity
+https://github.com/chipnbits/flowtrain_stochastic_interpolation
+
+2. Confidence of each voxel (feature extent)
+Feature extent & Model scoring: https://github.com/chipnbits/flowtrain_stochastic_interpolation
+
+3. Planning (start with drilling): For a given block with a given uncertainty, determine best drill (angle, depth, (x,y) location)
+
+### Infrastructure & Links
+
+- [gravity-sims](https://github.com/Exascale-Systems/gravity-sims) — visualization, data generation, evaluation, forward modeling, UNet
+- [Datasets & models](https://drive.google.com/file/d/1VrqcjQ8eliTs9gD75zIvI0jUpR37lg5K/view?usp=sharing) — Google Drive
+- [StructuralGeo fork](https://github.com/kostubhagarwal/StructuralGeo) — realistic geology data generation
+- [flowtrain_stochastic_interpolation](https://github.com/kostubhagarwal/flowtrain_stochastic_interpolation) — template for posterior flow sampling
+
+---
+
+## This Repo (gravity-sims)
+
 ## Objective
 
 There are two technques for resolving a subsurface density map from surface gravity measurements. While, calculating the gravity from a known subsurface map is trivial, the inverse is an ill-posed problem without a unique solution.
 
 ## Inversion
 
-Bayesian analysis techniques like [SIMPEG](https://docs.simpeg.xyz/latest/content/user-guide/tutorials/03-gravity/index.html) enable the resolution of  subsurface density contrasts. 
+Bayesian analysis techniques like [SIMPEG](https://docs.simpeg.xyz/latest/content/user-guide/tutorials/03-gravity/index.html) enable the resolution of  subsurface density contrasts.
 
-Evaluation of the process requires the following: 
+Evaluation of the process requires the following:
 
-Generate synthetic density contrast → Calculate gravity at surface → Add noise to surface gravity measurement (to simulate realistic survey) → Solve for density contrast using SIMPEG (L2 or IRLS inverse solvers). 
+Generate synthetic density contrast → Calculate gravity at surface → Add noise to surface gravity measurement (to simulate realistic survey) → Solve for density contrast using SIMPEG (L2 or IRLS inverse solvers).
 
 [bayesian.ipynb](archive/bayesian.ipynb)
 
@@ -162,3 +246,7 @@ The generation of this dataset relies on a [forked version](https://github.com/k
     - terrain correction
     - dtu15 free-air satellite dataset
     - potential field models
+
+## Resources
+
+See [`resources/`](resources/) for collected research papers.
