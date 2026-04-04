@@ -2,7 +2,7 @@ import dvc.api
 
 from src.data.dataset import data_prep
 from src.training.engine import train_model
-from src.modeling.networks import GravInvNet
+from src.models.unet import GravInvNet
 
 
 def main(model_name):

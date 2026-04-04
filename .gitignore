@@ -1,10 +1,12 @@
 **/__pycache__/
 .claude
 .venv
-data/*
+.dvc
 checkpoints/*
-models/*
+data/*
 logs/*
+models/*
+splits/*
 results/*
 .direnv/*
 .envrc

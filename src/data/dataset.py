@@ -60,17 +60,12 @@ class MasterDataset(Dataset):
         f = self._require_file()
         k, s = self.__subgetitem__(idx, f)
 
-        # Extract specific components
-        # s["gravity_data"] is (N_receivers * num_components)
-        # Data is interleaved: [C0_R0, C1_R0, ..., CN_R0, C0_R1, C1_R1, ...]
-        # We extract each component using slicing [c_idx::num_components]
         gravity_list = []
         raw_gravity = s["gravity_data"]
-        num_components = len(self.component_indices)
         for c_idx in self.component_indices:
             gravity_list.append(
                 torch.as_tensor(
-                    raw_gravity[c_idx::num_components],
+                    raw_gravity[c_idx::len(COMPONENT_MAP)],
                     dtype=torch.float32,
                     device=self.device,
                 )
