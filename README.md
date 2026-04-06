@@ -2,17 +2,50 @@
 
 ## Background
 
-Remote sensing of the subsurface is fundamentally ambiguous — many possible geological models can explain the same measurements.
+Remote sensing of the subsurface is fundamentally an ambiguous problem. Interpolating a 3D volume from a 2D measurement is inherently ill-posed (non-unique, unstable, underdetermined (2D → 3D)) — meaning there are many possible 3D geological models that can produce the same set of 2D measurements.
 
-**Gravity example:**
-- **Forward problem:** Given a 3D density model → compute gravity field. Well-defined, computationally expensive but solvable.
-- **Inverse problem:** Given gravity field → recover 3D density. Ill-posed: non-unique, unstable, underdetermined (2D → 3D).
+As such, there are two main flavours to resolving a 3D subsurface density map in industry today:
 
-**Industry approaches today:**
 1. **Model → simulate → compare** — propose a geological model, forward simulate, compare with observed data, repeat.
 2. **Direct inversion** — invert measurements into a model, often heavily regularized.
 
-Both are used in conjunction, but service providers usually only deliver a model that fits the data — not one that's necessarily right or the most likely across the full solution space.
+In industry, both these methods are used in conjunction to converge on a solution.
+
+SIMPEG is an open source library enabling both forward modelling and the direct inversion (least squares minimization, sparse norm, etc) of a 2D gravity measurement to resolve a 3D subsurface density map. SIMPEG's inversion solvers are classified as deterministic optimization methods. Unfortunately, the nature of the problem:
+
+- non-linear
+- sparse
+- long wavelengths
+
+makes these methods somewhat ineffective at resolving accurate 3D subsurface density maps. The results tend to severely smooth out results and weight the voxels with less depth far more than those at further wavelengths. While some people adjust the Jacobian sensitivity matrix (depth-weighting, etc.) this method is still limited.
+
+Our thought was then that a neural net would be better suited at directly inverting a 2D gravity measurement while being able to resolve non-linear, sparse, long wavelength 3D subsurface density maps. This has the added benefit of frontloading computation during pretraining with inference being extremely lightweight.
+
+This would look like:
+
+```
+Generate geology → Compute surface gravity → Add noise (simulate survey)
+    → Forward pass → Loss(predicted density map, ground truth) → Backprop
+```
+
+- `x`: gravity measurement
+- `y`: density contrast
+
+However, this does not solve the fundamental problem. Even with a perfect solver that produces realistic subsurface models, the inverse problem remains non-unique—there are many models that fit the same data. As a result, service providers typically deliver a model that fits the observations, but not necessarily one that is correct or representative of the full solution space.
+
+This makes **stochastic sampling approaches** more appropriate, as they aim to approximate the full posterior ( P(m \mid d) ) rather than a single solution. Traditional methods like MCMC can achieve this, but are computationally expensive. Unfortunately, this workflow is unsuited to humans because:
+
+* **The solution space is combinatorial and non-unique:** the number of valid models ( m \in \mathbb{R}^N ) that explain ( d ) is effectively exponential in (N). Humans can only evaluate a handful; the system can approximate ( P(m \mid d) ) over this space.
+
+* **Evaluation is cheap but search is the bottleneck:** forward physics ( g(m) ) is well-defined, so scoring ( P(d \mid m) ) is straightforward—the hard part is exploring enough candidates. This is exactly where computation dominates humans.
+
+* **The problem is sequential, not static:** optimal exploration requires planning over future measurements, i.e. maximizing expected value over action sequences. Humans reason myopically; the system can simulate and optimize over many possible futures.
+
+**Generative models (flow matching, diffusion)** address this by learning the distribution upfront, shifting computation to training and enabling fast sampling at inference.
+
+Finally, since **drilling cores provide ground truth**, the problem naturally becomes a **sequential, data-driven process**, making it well-suited to a computational pipeline that continuously samples, updates, and refines beliefs as new measurements are acquired.
+
+This problem is not limited by physics or modeling — it is limited by *search over uncertainty*, which is precisely where computation dominates human reasoning. This results in a much more cost-effective, efficient exploration process.
 
 ## Vision
 
@@ -63,69 +96,22 @@ for candidate action a across all samples:
 
 ### Next Steps
 
-1. Posterior Flow Sampling Implementation of Gravity & Conditional Flow Matching of Gravity
-https://github.com/chipnbits/flowtrain_stochastic_interpolation
+1. Posterior Flow Sampling Implementation of Gravity (https://github.com/chipnbits/flowtrain_stochastic_interpolation)
 
-2. Confidence of each voxel (feature extent)
+2. Conditional flow matching gravity (https://github.com/chipnbits/flowtrain_stochastic_interpolation)
+
+3. Confidence of each voxel (feature extent)
 Feature extent & Model scoring: https://github.com/chipnbits/flowtrain_stochastic_interpolation
 
-3. Planning (start with drilling): For a given block with a given uncertainty, determine best drill (angle, depth, (x,y) location)
+4. Planning engine (start with drilling): For a given block with a given uncertainty, determine best drill (angle, depth, (x,y) location)
 
 ### Infrastructure & Links
 
-- [geai](https://github.com/Exascale-Systems/geai) — visualization, data generation, evaluation, forward modeling, UNet
 - [Datasets & models](https://drive.google.com/file/d/1VrqcjQ8eliTs9gD75zIvI0jUpR37lg5K/view?usp=sharing) — Google Drive
 - [StructuralGeo fork](https://github.com/kostubhagarwal/StructuralGeo) — realistic geology data generation
 - [flowtrain_stochastic_interpolation](https://github.com/kostubhagarwal/flowtrain_stochastic_interpolation) — template for posterior flow sampling
 
 ---
-
-## Objective
-
-There are two technques for resolving a subsurface density map from surface gravity measurements. While, calculating the gravity from a known subsurface map is trivial, the inverse is an ill-posed problem without a unique solution.
-
-## Inversion
-
-Bayesian analysis techniques like [SIMPEG](https://docs.simpeg.xyz/latest/content/user-guide/tutorials/03-gravity/index.html) enable the resolution of  subsurface density contrasts.
-
-Evaluation of the process requires the following:
-
-Generate synthetic density contrast → Calculate gravity at surface → Add noise to surface gravity measurement (to simulate realistic survey) → Solve for density contrast using SIMPEG (L2 or IRLS inverse solvers).
-
-Unfortunately this method is unsuitable for non-linear / sparse problems, struggles at long wavelengths, and is computationally expensive.
-
-## Deep Learning
-
-A forward pass through a neural net may be more suitable at resolving non-linear / sparse features such as those in subsurface density maps. Additionally, this is likely more computationally efficient. To generate a neural net of this kind, one has to train the weights of the neural net via deep learning to perform the inversion. Since there is limited subsurface density maps, one must use synthetic data. The training process requires the follwing:
-
-Generate synthetic subsurface density map → Calculate gravity at surface → Add noise to surface gravity measurement (to simulate realistic survey) → Train neural net:
-
-- gravity measurement (x)
-- density contrast (y)
-
-## Architecture (UNET 2D --> 3D)
-
-Trying to replicate *Deep Learning for 3-D Inversion of Gravity Data* by *Zhang et al.*
-
-<img src="resources/zhang.png" alt="alt text" width="800" />
-
-## Dataset 1 [[single_block_v2.h5](data/single_block_v2.h5)]
-
-- 20 000 samples
-- 4:1 training, validation [[single_block_v2.npz](splits/single_block_v2.npz)]
-- 0-1 g/cm^3
-- 32 x 32 x 16 (50m voxels)
-- Randomly generate 1 block 0-30% of domain size within voxel grid
-- flat topography
-- noise: 0.05e-3 mGal, w/ 95% confidence
-
-## Dataset 2
-
-The following paper describes a method for generating much more plausible/realistic synthetic geology. More specifically, applying matrix transformations to reflect realisitc geological timelines to an inital deposition of material. The variance in this dataset is a function of Markov sampling of the following [Markov Matrix](https://github.com/kostubhagarwal/StructuralGeo/blob/main/src/geogen/generation/markov_matrix/default_markov_matrix.csv).
-
-[Synthetic Geology -- Structural Geology Meets Deep Learning](https://arxiv.org/abs/2506.11164)
-
-The generation of this dataset relies on a [forked version](https://github.com/kostubhagarwal/StructuralGeo) of the repo described in this paper. This fork adds a channel of information (in this case density) to 'Rock Category Mapping' as defined in StructuralGeo via a lookup table.
 
 ## Repo
 
@@ -256,122 +242,6 @@ Open `http://localhost:6006` in your browser.
 - `Loss/train` and `Loss/val` both decrease and track each other closely (no large gap = no overfitting)
 - Gradient norm stays in the 0.01–1.0 range
 - Weight histograms shift gradually without collapsing to zero
-
----
-
-## To-do
-#### High Priority
-- Refactor ()
-- Train & Evaluate (vector vs gz vs gzz vs gz & gzz vs vector & gzz)
-- Train & Evaluate (dl vs dl+simpeg vs simpeg)
-- train.py
-    - loss function
-        - MAE
-        - dice
-        - IoU
-        - MSE (regression) & Dice/IoU (segmentation)
-        - simpeg forward pass - compare true gravity to predicted gravity
-    - data augmentation
-        - rotation
-        - flips
-    - weight decay
-    - learning Rate
-    - batch size
-    - normalization
-- StructuralGeo dataset
-------
-#### Lower Priority
-- nn.py
-    - dropout
-    - skip modules
-    - attention
-    - 3D --> 3D UNET?
-    - multi-sensor fusion
-        - ablation study
-- generative modelling (Flow-matching & GANs)
-- unstructured mesh??? https://www.youtube.com/watch?v=mvKNf_9CYTQ (geotexera)
-
-## Completed
-- inspect.py / plot.py
-    - gravity
-        - residual plot
-            - RMSE
-            - R^2
-    - density map
-        - mse vs l1 vs dice vs IoU
-        - slice plot (x,y,z)
-        - slice residuals plot (x,y,z)
-            - mse vs l1 vs IoU vs dice coeff.
-- train.py
-    - track
-        - gradient norms
-        - weight histogram drift
-        - *feature map visualization
-- figure out gal/sqrt(Hz)
-- heavy refactor
-- SIMPEG eval.py
-- consolidate/refactor metrics.py, eval.py, sample.py, data.py
-- consolidate/refactor sample.py, eval.py
-- refactor eval.py
-- deeplearning + simpeg regularization hybrid
-- Generate clean dataset with vector and grad components
-- Train & Evaluate (0.5, 5, 50, 500 uGal nn)
-
-## Open Questions
-### Geology
-- edge effects?
-- synthetic data robustness?
-- survey properties (spacing, noise)
-- physics limitations (depth, feature size, etc)
-
-### Deep Learning
-- alternative architectures?
-    - NeRF
-    - DeepSDF
-    - FNO / DeepONet
-    - PINN
-
-## Notes
-
-#### Improved Gravity Inversion Method Based on Deep Learning with Physical Constraint and Its Application to the Airborne Gravity Data in East Antarctica
-- CNN UNET (2D --> 3D)
-- 20 000 samples
-- 1g/cm^3 contrast
-- 32 x 32 x 16 (1km cubes)
-
-#### Deep Learning for 3-D Inversion of Gravity Data
-- CNN UNET (2D --> 3D)
-- 40 000 samples
-- 0.1-1g/cm^3
-- 3:1:1 ratio
-- 64 x 64 x 32 (50m spacing)
-- single block; single dipping slab; combined blocksl; combined dipping slabs
-
-#### 3-D Gravity Inversion Based on Deep Convolution  Neural Networks
-- CNN UNET (2D --> 3D Virtual (50 channels represent depth))
-- 14 000 samples
-- 3:1:1 ratio
-- 112 x 112 x 50 channels (50m spacing)
-- one, two, four prism
-
-#### Three-dimensional gravity inversion  based on 3D U-Net++*
-- CNN UNET (3D --> 3D)
-- 12 000 samples
-- 32 x 32 x 16
-- 5:1 ratio
-- difference from 3D UNET (plain skips vs dense/nested skips)
-
-#### Three-Dimensional Gravity Inversion Based on Attention Feature Fusion
-- CNN UNET (2D --> 3D)
-- 32 x 32 x 16 (50m)
-- 22 000 samples
-- 1g/cm^3 density contrast
-
-#### Mark McLean '3D inversion modelling of Full Spectrum FALCON® airborne gravity data over Otway Basin'
-- https://www.youtube.com/watch?v=FwN9O1AnS3g&t=764s (mira & xcalibur)
-    - terrain correction
-    - dtu15 free-air satellite dataset
-    - potential field models
 
 ## Resources
 
