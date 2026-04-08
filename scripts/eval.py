@@ -93,6 +93,7 @@ if __name__ == "__main__":
 
     output_dir = Path(eval_p["output_dir"])
     output_dir.mkdir(parents=True, exist_ok=True)
+    Path("models").mkdir(parents=True, exist_ok=True)
 
     metrics = _eval(
         mode=mode,

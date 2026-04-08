@@ -9,6 +9,7 @@
 /checkpoints
 /data
 /logs
+/metrics
 /models
 /results
 /splits
