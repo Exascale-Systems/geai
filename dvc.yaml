@@ -3,6 +3,7 @@ stages:
     cmd: python scripts/gen.py
     params:
       - params.yaml:
+          - gen.generator
           - gen.out_path
           - gen.ds_size
           - gen.x_dom
@@ -15,6 +16,8 @@ stages:
           - gen.size_frac_max
           - gen.density_min
           - gen.density_max
+          - gen.bounds
+          - gen.resolution
     outs:
       - ${gen.out_path}:
           cache: true

@@ -1,39 +1,70 @@
-data:
-  ds_name: single_block_v2
-  split_name: single_block_v2
-  batch_size: 32
-
 gen:
-  out_path: data/single_block_v2.h5
-  ds_size: 20000
-  x_dom: 1600.0
-  y_dom: 1600.0
-  z_dom: 800.0
-  n_xy: 32
-  n_z: 16
-  n_blocks: 1
-  size_frac_min: 0.10
-  size_frac_max: 0.30
-  density_min: 0.0
-  density_max: 1.0
+  generator: structuralgeo  # blocks | structuralgeo
+  out_path: data/test1.h5
+  ds_size: 2                # number of samples to generate
+  components:               # gravity components to simulate
+  - gz
+  - gy
+  - gz
+  # blocks generator
+  x_dom: 1600.0             # domain size x (m)
+  y_dom: 1600.0             # domain size y (m)
+  z_dom: 800.0              # domain size z (m)
+  n_xy: 32                  # cells in x/y
+  n_z: 16                   # cells in z
+  n_blocks: 1               # number of anomaly blocks
+  size_frac_min: 0.10       # min block size as fraction of domain
+  size_frac_max: 0.30       # max block size as fraction of domain
+  density_min: 0.0          # min density contrast (g/cc)
+  density_max: 1.0          # max density contrast (g/cc)
+  # structuralgeo generator
+  bounds: [[0, 6.4e4], [0, 6.4e4], [0, 3.2e4]]  # [[xmin,xmax],[ymin,ymax],[zmin,zmax]] (m)
+  resolution: [32, 32, 16]  # mesh cells [nx, ny, nz]
+
+data:
+  ds_name: single_block_v2      # dataset file (data/{ds_name}.h5)
+  split_name: single_block_v2   # splits file (splits/{split_name}.npz)
 
 train:
   model_name: default_model
-  device: cpu
-  lr: 1e-3
-  wd: 0.0
-  max_epochs: 20
-  min_loss: 1e-6
-  eval_interval: 1
+  device: cuda:0
+  batch_size: 8
+  n_samples: 8              # samples to use (null = all)
+  train_split: 0.8          # fraction for training
+  lr: 1e-3                  # learning rate
+  wd: 0.0                   # weight decay
+  max_epochs: 50
+  min_loss: 1e-6            # early stop threshold
+  eval_interval: 1          # validate every N epochs
   components:
     - gz
   noise:
-    accuracy: 0.05
-  confidence: 0.95
+    accuracy: 0.05          # noise level (fraction of signal)
+  confidence: 0.95          # confidence level for noise sigma
   experiments:
     default_model:
-      loss_function: mse
+      loss_function: mse    # mse | dice
 
 eval:
+  model_name: single_block_05_f
+  run_name: null            # metrics filename: eval_{run_name}.json (null = model_name)
+  mode: nn                  # nn | bayesian | hybrid
+  split: va                 # tr | va
   output_dir: metrics
-  threshold: 0.1
+  threshold: 0.1            # binary threshold for IoU/Dice
+  noise:
+    accuracy: 0.05
+  confidence: 0.95
+  inversion:                # SimPEG GNCG settings (bayesian + hybrid)
+    max_iter: 50
+    max_iter_ls: 20         # line search steps per iteration
+    lower: -1.0             # density contrast bounds (g/cc)
+    upper: 1.0
+    cg_maxiter: 10
+    cg_atol: 1.0e-4
+    beta0_ratio: 10.0       # initial regularization weight
+    cooling_factor: 5.0     # beta multiplied by 1/cooling_factor each step
+    cooling_rate: 1         # cool every N iterations
+    chifact: 1.0            # target misfit (1 = fit to noise)
+  hybrid:
+    alpha_s: 1.0            # weight on NN reference model in regularization

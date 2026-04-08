@@ -2,7 +2,7 @@ import numpy as np
 from simpeg.potential_fields import gravity
 from tqdm import tqdm
 
-from src.gen.core import (
+from src.gen.gen import (
     add_random_blocks,
     create_mesh,
     create_topo,
@@ -24,6 +24,7 @@ def generate_batch(
     size_frac=(0.10, 0.30),
     density_range=(0.0, 1.0),  # random blocks generator
     base_seed=0,
+    components=("gx", "gy", "gz"),
 ):
     topo_xyz = create_topo(x_dom=x_dom, y_dom=y_dom)
     mesh = create_mesh(topo_xyz=topo_xyz, n_xy=n_xy, n_z=n_z, z_dom=z_dom)
@@ -31,7 +32,7 @@ def generate_batch(
     receiver_locations, survey = gravity_survey(
         topo_xyz=topo_xyz,
         n_per_axis=n_xy,
-        components=("gx", "gy", "gz"),
+        components=components,
     )
     sim = gravity.simulation.Simulation3DIntegral(
         survey=survey,

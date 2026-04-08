@@ -20,7 +20,7 @@ from src.evaluation import (
     plot_gravity_measurements,
 )
 from src.evaluation.metrics import NumpyMetrics
-from src.gen.core import sim_from_sample
+from src.gen.gen import sim_from_sample
 
 
 def eval_hybrid(
@@ -33,11 +33,26 @@ def eval_hybrid(
     max_samples: int | None = None,
     accuracy: float = 0.001,
     confidence: float = 0.95,
+    inv_params: dict | None = None,
+    hybrid: dict | None = None,
 ):
     """
     Hybrid NN-Bayesian inversion: Use NN prediction as initial model (m0) for SimPEG.
     """
     net.eval()
+    inv_p = inv_params or {}
+    max_iter = inv_p.get("max_iter", 50)
+    max_iter_ls = inv_p.get("max_iter_ls", 20)
+    lower = inv_p.get("lower", -1.0)
+    upper = inv_p.get("upper", 1.0)
+    cg_maxiter = inv_p.get("cg_maxiter", 10)
+    cg_atol = inv_p.get("cg_atol", 1e-4)
+    beta0_ratio = inv_p.get("beta0_ratio", 10.0)
+    cooling_factor = inv_p.get("cooling_factor", 5.0)
+    cooling_rate = int(inv_p.get("cooling_rate", 1))
+    chifact = inv_p.get("chifact", 1.0)
+    nn_weight = (hybrid or {}).get("alpha_s", 1.0)
+
     z = (1.0 + confidence) / 2.0
     z = np.clip(z, 1e-10, 1 - 1e-10)
     ppf_z = norm.ppf(z)
@@ -81,17 +96,21 @@ def eval_hybrid(
 
             data_object = data.Data(survey, dobs=x_obs_flat, noise_floor=sigma)
             dmis = data_misfit.L2DataMisfit(data=data_object, simulation=sim)
-            reg = regularization.WeightedLeastSquares(mesh, active_cells=ind, mapping=model_map)
+            reg = regularization.WeightedLeastSquares(
+                mesh, active_cells=ind, mapping=model_map,
+                reference_model=nn_m0, alpha_s=nn_weight,
+            )
             opt = optimization.ProjectedGNCG(
-                maxIter=10, lower=-1.0, upper=1.0, maxIterLS=20, cg_maxiter=10, cg_atol=1e-3,
+                maxIter=max_iter, lower=lower, upper=upper,
+                maxIterLS=max_iter_ls, cg_maxiter=cg_maxiter, cg_atol=cg_atol,
             )
             inv_prob = inverse_problem.BaseInvProblem(dmis, reg, opt)
             directives_list = [
                 directives.UpdateSensitivityWeights(every_iteration=False),
-                directives.BetaEstimate_ByEig(beta0_ratio=1e1),
-                directives.BetaSchedule(coolingFactor=5, coolingRate=1),
+                directives.BetaEstimate_ByEig(beta0_ratio=beta0_ratio),
+                directives.BetaSchedule(coolingFactor=cooling_factor, coolingRate=cooling_rate),
                 directives.UpdatePreconditioner(),
-                directives.TargetMisfit(chifact=1),
+                directives.TargetMisfit(chifact=chifact),
             ]
             inv = inversion.BaseInversion(inv_prob, directives_list)
             pred_y = inv.run(nn_m0)
@@ -127,15 +146,21 @@ def eval_hybrid(
 
         data_object = data.Data(survey, dobs=x_obs_flat, noise_floor=sigma)
         dmis = data_misfit.L2DataMisfit(data=data_object, simulation=sim)
-        reg = regularization.WeightedLeastSquares(mesh, active_cells=ind, mapping=model_map)
-        opt = optimization.ProjectedGNCG(maxIter=50, maxIterLS=20, cg_maxiter=10, cg_atol=1e-5)
+        reg = regularization.WeightedLeastSquares(
+            mesh, active_cells=ind, mapping=model_map,
+            reference_model=nn_m0, alpha_s=nn_weight,
+        )
+        opt = optimization.ProjectedGNCG(
+            maxIter=max_iter, lower=lower, upper=upper,
+            maxIterLS=max_iter_ls, cg_maxiter=cg_maxiter, cg_atol=cg_atol,
+        )
         inv_prob = inverse_problem.BaseInvProblem(dmis, reg, opt)
         directives_list = [
             directives.UpdateSensitivityWeights(every_iteration=False),
-            directives.BetaEstimate_ByEig(beta0_ratio=1e1),
-            directives.BetaSchedule(coolingFactor=5, coolingRate=1),
+            directives.BetaEstimate_ByEig(beta0_ratio=beta0_ratio),
+            directives.BetaSchedule(coolingFactor=cooling_factor, coolingRate=cooling_rate),
             directives.UpdatePreconditioner(),
-            directives.TargetMisfit(chifact=1),
+            directives.TargetMisfit(chifact=chifact),
         ]
         inv = inversion.BaseInversion(inv_prob, directives_list)
         pred_y = inv.run(nn_m0)

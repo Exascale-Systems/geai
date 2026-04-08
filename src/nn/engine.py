@@ -85,10 +85,16 @@ def train_model(net, tr_ld: DataLoader, va_ld: DataLoader, stats: dict, config: 
     logger.info("Loss function: %s", loss_fn_name)
 
     scaler = GradScaler()
+    if config.get("_resume_optimizer"):
+        opt.load_state_dict(config["_resume_optimizer"])
+    if config.get("_resume_scaler"):
+        scaler.load_state_dict(config["_resume_scaler"])
     writer = SummaryWriter(log_dir)
 
-    pbar = tqdm(range(0, max_epochs), desc="training", ncols=100)
-    best = float("inf")
+    start_epoch = config.get("start_epoch", 0)
+    best = config.get("best_val_loss", float("inf"))
+
+    pbar = tqdm(range(start_epoch, max_epochs), desc="training", ncols=100)
 
     for e in pbar:
         tr = run_epoch(
@@ -121,7 +127,13 @@ def train_model(net, tr_ld: DataLoader, va_ld: DataLoader, stats: dict, config: 
 
         if va < best:
             best = va
-            torch.save({"model": net.state_dict()}, f"{checkpoint_dir}/best.pt")
+            torch.save({
+                "model": net.state_dict(),
+                "optimizer": opt.state_dict(),
+                "scaler": scaler.state_dict(),
+                "epoch": e,
+                "best_val_loss": best,
+            }, f"{checkpoint_dir}/best.pt")
         if va < min_loss:
             logger.info("Reached target loss %.6f at epoch %d", va, e)
             break

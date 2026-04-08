@@ -166,6 +166,7 @@ def sim_from_sample(sample_data, shape_cells, h, components=("gz",)):
         rhoMap=model_map,
         active_cells=ind,
         engine="choclo",
+        store_sensitivities="forward_only",
     )
 
     return sim, mesh, survey, model_map, ind

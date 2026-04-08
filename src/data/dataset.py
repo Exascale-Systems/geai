@@ -63,10 +63,12 @@ class MasterDataset(Dataset):
 
         gravity_list = []
         raw_gravity = s["gravity_data"]
+        n_receivers = s["receiver_locations"].shape[0]
+        n_stored = raw_gravity.shape[0] // n_receivers
         for c_idx in self.component_indices:
             gravity_list.append(
                 torch.as_tensor(
-                    raw_gravity[c_idx::len(COMPONENT_MAP)],
+                    raw_gravity[c_idx::n_stored],
                     dtype=torch.float32,
                     device=self.device,
                 )
@@ -162,6 +164,8 @@ def data_prep(
     accuracy: float = 0.01,
     confidence: float = 0.95,
     components: tuple = ("gz",),
+    n_samples: int | None = None,
+    train_split: float = 0.8,
 ):
     """
     return training dataset, validation dataset, and stats required for normalization.
@@ -178,13 +182,19 @@ def data_prep(
     if load_splits and Path(f"splits/{split_name}.npz").exists():
         splits = np.load(f"splits/{split_name}.npz")
         tr_indices, va_indices = splits["tr"], splits["va"]
+        if n_samples is not None:
+            n_tr = int(train_split * n_samples)
+            n_va = n_samples - n_tr
+            tr_indices = tr_indices[:n_tr]
+            va_indices = va_indices[:n_va]
         tr_ds = Subset(ds, tr_indices)
         va_ds = Subset(ds, va_indices)
     else:  # new splits
-        n = len(ds)
+        n = len(ds) if n_samples is None else min(n_samples, len(ds))
+        n_tr = int(train_split * n)
         tr_ds, va_ds = random_split(
-            ds, [int(0.8 * n), n - int(0.8 * n)], torch.Generator().manual_seed(0)
-        )  # 80% train, 20% val
+            ds, [n_tr, n - n_tr], torch.Generator().manual_seed(0)
+        )
         Path("splits").mkdir(parents=True, exist_ok=True)
         np.savez(
             f"splits/{split_name}.npz",

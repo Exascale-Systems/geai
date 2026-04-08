@@ -31,6 +31,7 @@ def compute_stats(h5_path):
                 rho_min, rho_max = min(rho_min, vals.min()), max(rho_max, vals.max())
     return dict(gz_min=gz_min, gz_max=gz_max, rho_min=rho_min, rho_max=rho_max)
 
+# ── Archived ─────────────────────────────────────────────────────────────────
 
 def norm(a, a0, a1):
     a = torch.as_tensor(a)

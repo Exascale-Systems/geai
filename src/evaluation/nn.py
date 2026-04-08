@@ -16,19 +16,22 @@ from src.evaluation import (
     plot_gravity_measurements,
 )
 from src.evaluation.metrics import TorchMetrics
-from src.gen.core import sim_from_sample
+from src.gen.gen import sim_from_sample
 from src.nn.unet import GravInvNet
 
 
-def load_model(model_name, device="cpu", in_channels=1, checkpoint_path=None):
+def load_model(model_name=None, device="cpu", in_channels=1, model_path=None):
     if device == "cuda" and not torch.cuda.is_available():
         device = "cpu"
     device = torch.device(device)
     model = GravInvNet(in_channels=in_channels).to(device)
-    path = Path(checkpoint_path) if checkpoint_path else Path(f"checkpoints/{model_name}_final.pt")
+    path = Path(model_path) if model_path else Path(f"checkpoints/{model_name}_final.pt")
     if path.exists():
         state = torch.load(path, map_location=device)
         model.load_state_dict(state.get("model", state))
+        print(f"Loaded model: {path}")
+    else:
+        raise FileNotFoundError(f"Model not found: {path}")
     model.eval()
     return model, device
 
@@ -128,9 +131,6 @@ def eval_nn(
             print(">>> Showing Predicted Density Contrast 3D (close window to continue)...")
             plot_density_contrast_3D(mesh, ind, pred_y_np)
 
-            print(
-                f"Predicted density stats - min: {pred_y_np.min()}, max: {pred_y_np.max()}, mean: {pred_y_np.mean()}"
-            )
             print("\nEvaluation complete!")
 
     return {

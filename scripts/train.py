@@ -7,68 +7,73 @@ from src.data.dataset import data_prep
 from src.nn.engine import train_model
 from src.nn.unet import GravInvNet
 
-REQUIRED_PARAMS = {
-    "data": ["ds_name", "split_name", "batch_size"],
-    "train": ["lr", "wd", "max_epochs", "min_loss", "eval_interval", "device",
-              "components", "confidence", "noise", "experiments", "model_name"],
-}
 
+if __name__ == "__main__":
+    import argparse
 
-def validate_params(params, model_name):
-    for section, keys in REQUIRED_PARAMS.items():
-        if section not in params:
-            raise KeyError(f"params.yaml missing section: '{section}'")
-        for key in keys:
-            if key not in params[section]:
-                raise KeyError(f"params.yaml missing '{section}.{key}'")
-    if model_name not in params["train"]["experiments"]:
-        raise KeyError(f"params.yaml missing 'train.experiments.{model_name}'")
-    if "accuracy" not in params["train"]["noise"]:
-        raise KeyError("params.yaml missing 'train.noise.accuracy'")
+    parser = argparse.ArgumentParser(description="Train a model")
+    parser.add_argument("--model", default=None, help="Override train.model_name")
+    parser.add_argument("--epochs", type=int, default=None, help="Override train.max_epochs")
+    parser.add_argument("--bs", type=int, default=None, help="Override data.batch_size")
+    parser.add_argument("--ds-name", default=None, help="Override data.ds_name")
+    parser.add_argument("--device", default=None, help="Override train.device")
+    args = parser.parse_args()
 
-
-def main(model_name=None):
     params = dvc.api.params_show()
+    train_p = params["train"]
+    data_p = params["data"]
 
-    if model_name is None:
-        model_name = params["train"].get("model_name", "default_model")
+    model_name = args.model or train_p["model_name"]
+    ds_name = args.ds_name or data_p["ds_name"]
+    max_epochs = args.epochs or train_p["max_epochs"]
+    batch_size = args.bs or train_p["batch_size"]
+    n_samples = train_p.get("n_samples")
+    train_split = train_p.get("train_split", 0.8)
+    device = args.device or train_p["device"]
 
-    validate_params(params, model_name)
-
-    data_params = params["data"]
-    train_params = params["train"]
-    loss_function = train_params["experiments"][model_name]["loss_function"]
-
-    components = tuple(train_params["components"])
-    accuracy = train_params["noise"]["accuracy"]
-    confidence = train_params["confidence"]
+    components = tuple(train_p["components"])
+    loss_function = train_p["experiments"].get(model_name, {}).get("loss_function", "mse")
 
     tr_ld, va_ld, stats = data_prep(
-        ds_name=data_params["ds_name"],
-        split_name=data_params["split_name"],
-        bs=data_params["batch_size"],
+        ds_name=ds_name,
+        split_name=data_p["split_name"],
+        bs=batch_size,
         load_splits=True,
         transform=True,
-        accuracy=accuracy,
-        confidence=confidence,
+        accuracy=train_p["noise"]["accuracy"],
+        confidence=train_p["confidence"],
         components=components,
+        n_samples=n_samples,
+        train_split=train_split,
     )
 
     config = {
-        "device": train_params["device"],
-        "lr": train_params["lr"],
-        "wd": train_params["wd"],
-        "max_epochs": train_params["max_epochs"],
-        "min_loss": train_params["min_loss"],
-        "eval_interval": train_params["eval_interval"],
+        "device": device,
+        "lr": train_p["lr"],
+        "wd": train_p["wd"],
+        "max_epochs": max_epochs,
+        "min_loss": train_p["min_loss"],
+        "eval_interval": train_p["eval_interval"],
         "components": components,
         "model_name": model_name,
         "loss_function": loss_function,
     }
 
     Path("checkpoints").mkdir(parents=True, exist_ok=True)
-
     net = GravInvNet(in_channels=len(components), model_name=model_name)
+
+    resume_path = Path(f"checkpoints/best.pt")
+    if resume_path.exists():
+        import torch
+        state = torch.load(resume_path, map_location="cpu")
+        net.load_state_dict(state["model"])
+        config["start_epoch"] = state.get("epoch", 0) + 1
+        config["best_val_loss"] = state.get("best_val_loss", float("inf"))
+        config["_resume_optimizer"] = state.get("optimizer")
+        config["_resume_scaler"] = state.get("scaler")
+        remaining = config["max_epochs"] - config["start_epoch"]
+        print(f"Resuming from {resume_path} (epoch {config['start_epoch']}, {remaining} epochs remaining)")
+
     final_metrics = train_model(net, tr_ld, va_ld, stats, config)
 
     metrics_path = Path(f"metrics/{model_name}_train.json")
@@ -76,12 +81,3 @@ def main(model_name=None):
     with open(metrics_path, "w") as f:
         json.dump(final_metrics, f, indent=2)
     print(f"Metrics saved to {metrics_path}")
-
-
-if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("model_name", nargs="?", default=None, help="Model/experiment name")
-    args = parser.parse_args()
-    main(args.model_name)
