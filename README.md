@@ -49,7 +49,7 @@ This problem is not limited by physics or modeling — it is limited by *search 
 
 ## Vision
 
-Build an agent to drive end-to-end geophysical exploration — analogous to AlphaGo.
+Build an agent to drive end-to-end geophysical exploration - analogous to AlphaGo.
 
 ```
 belief -> action -> possible observation -> plan -> measurement -> updated belief -> repeat
