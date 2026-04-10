@@ -2,12 +2,12 @@
 
 ## Background
 
-Remote sensing of the subsurface is fundamentally an ambiguous problem. Interpolating a 3D volume from a 2D measurement is inherently ill-posed (non-unique, unstable, underdetermined (2D → 3D)) — meaning there are many possible 3D geological models that can produce the same set of 2D measurements.
+Remote sensing of the subsurface is fundamentally an ambiguous problem. Interpolating a 3D volume from a 2D measurement is inherently ill-posed (non-unique, unstable, underdetermined (2D → 3D)) - meaning there are many possible 3D geological models that can produce the same set of 2D measurements.
 
 As such, there are two main flavours to resolving a 3D subsurface density map in industry today:
 
-1. **Model → simulate → compare** — propose a geological model, forward simulate, compare with observed data, repeat.
-2. **Direct inversion** — invert measurements into a model, often heavily regularized.
+1. **Model → simulate → compare** - propose a geological model, forward simulate, compare with observed data, repeat.
+2. **Direct inversion** - invert measurements into a model, often heavily regularized.
 
 In industry, both these methods are used in conjunction to converge on a solution.
 
@@ -17,7 +17,7 @@ SIMPEG is an open source library enabling both forward modelling and the direct 
 - sparse
 - long wavelengths
 
-makes these methods susceptible to producing severely smoothed results that over-weight shallow voxels. The gravity forward problem is linear (`g = Jρ`), so SimPEG can solve it as a linear least-squares problem — but the sensitivity matrix **J** decays sharply with depth, making the inversion inherently depth-ambiguous and sensitive to regularization choice. While depth-weighting the Jacobian partially compensates, it doesn't resolve the fundamental non-uniqueness.
+makes these methods susceptible to producing severely smoothed results that over-weight shallow voxels. The gravity forward problem is linear (`g = Jρ`), so SimPEG can solve it as a linear least-squares problem - but the sensitivity matrix **J** decays sharply with depth, making the inversion inherently depth-ambiguous and sensitive to regularization choice. While depth-weighting the Jacobian partially compensates, it doesn't resolve the fundamental non-uniqueness.
 
 Our thought was then that a neural net would be better suited at directly inverting a 2D gravity measurement while being able to resolve non-linear, sparse, long wavelength 3D subsurface density maps. This has the added benefit of frontloading computation during pretraining with inference being extremely lightweight.
 
