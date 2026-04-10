@@ -31,7 +31,7 @@ Generate geology → Compute surface gravity → Add noise (simulate survey)
 - `x`: gravity measurement
 - `y`: density contrast
 
-However, this does not solve the fundamental problem. Even with a perfect solver that produces realistic subsurface models, the inverse problem remains non-unique—there are many models that fit the same data. As a result, service providers typically deliver a model that fits the observations, but not necessarily one that is correct or representative of the full solution space.
+However, this does not solve the fundamental problem. Even with a perfect solver that produces realistic subsurface models, the inverse problem remains non-unique - there are many models that fit the same data. As a result, service providers typically deliver a model that fits the observations, but not necessarily one that is correct or representative of the full solution space.
 
 This makes **stochastic sampling approaches** more appropriate, as they aim to approximate the full posterior ( P(m \mid d) ) rather than a single solution. Traditional methods like MCMC can achieve this, but are computationally expensive. Unfortunately, this workflow is unsuited to humans because:
 
